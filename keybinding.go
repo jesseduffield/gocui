@@ -112,6 +112,28 @@ func ParseAllKeybindings(input string) ([]ParsedKey, error) {
 	return ret, nil
 }
 
+// MustParseKeybinding parses the input string to a key but instead an
+// error, it panics when things go wrong.
+// This forces the caller to react to an error
+func MustParseKeybinding(input string) ParsedKey {
+	if key, err := ParseKeybinding(input); err != nil {
+		panic(err)
+	} else {
+		return key
+	}
+}
+
+// MustParseAllKeybindings parses all the input strings to a key but instead an
+// error, it panics when things go wrong.
+// This forces the caller to react to an error
+func MustParseAllKeybindings(input string) []ParsedKey {
+	if key, err := ParseAllKeybindings(input); err != nil {
+		panic(err)
+	} else {
+		return key
+	}
+}
+
 // matchKeypress returns if the keybinding matches the keypress.
 func (kb *keybinding) matchKeypress(key Key, ch rune, mod Modifier) bool {
 	return kb.key == key && kb.ch == ch && kb.mod == mod
