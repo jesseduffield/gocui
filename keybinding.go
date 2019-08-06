@@ -44,7 +44,7 @@ func newKeybinding(viewname string, key Key, ch rune, mod Modifier, handler func
 // Returns an error when something goes wrong
 func ParseKeybinding(input string) (ParsedKey, error) {
 
-	if len(input) == 1 && unicode.IsLetter(rune(input[0])) {
+	if len(input) == 1 {
 		K, _, err := getKey(rune(input[0]))
 		if err != nil {
 			return ParsedKey{}, err
