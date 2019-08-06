@@ -4,7 +4,13 @@
 
 package gocui
 
-import "github.com/jesseduffield/termbox-go"
+import (
+	"fmt"
+	"strings"
+	"unicode"
+
+	"github.com/jesseduffield/termbox-go"
+)
 
 // Keybidings are used to link a given key-press event with a handler.
 type keybinding struct {
@@ -13,6 +19,13 @@ type keybinding struct {
 	ch       rune
 	mod      Modifier
 	handler  func(*Gui, *View) error
+}
+
+// Key contains all relevant information about the key
+type ParsedKey struct {
+	Value    Key
+	Modifier Modifier
+	Tokens   []string
 }
 
 // newKeybinding returns a new Keybinding object.
@@ -25,6 +38,78 @@ func newKeybinding(viewname string, key Key, ch rune, mod Modifier, handler func
 		handler:  handler,
 	}
 	return kb
+}
+
+// ParseKeybinding turns the input string into an actual Key.
+// Returns an error when something goes wrong
+func ParseKeybinding(input string) (ParsedKey, error) {
+
+	if len(input) == 1 && unicode.IsLetter(rune(input[0])) {
+		K, _, err := getKey(rune(input[0]))
+		if err != nil {
+			return ParsedKey{}, err
+		}
+		return ParsedKey{K, ModNone, []string{input}}, nil
+	}
+
+	f := func(c rune) bool { return unicode.IsSpace(c) || c == '+' }
+	tokens := strings.FieldsFunc(input, f)
+	var normalizedTokens []string
+	var modifier = ModNone
+
+	for _, token := range tokens {
+		normalized := token
+
+		if value, exists := translate[normalized]; exists {
+			normalized = value
+		} else {
+			normalized = strings.Title(normalized)
+		}
+
+		if normalized == "Alt" {
+			modifier = ModAlt
+			continue
+		}
+
+		if len(normalized) == 1 {
+			normalizedTokens = append(normalizedTokens, strings.ToUpper(normalized))
+			continue
+		}
+
+		normalizedTokens = append(normalizedTokens, normalized)
+	}
+
+	lookup := strings.Join(normalizedTokens, "")
+	if !strings.Contains(lookup, "Mouse") {
+		lookup = "Key" + strings.Join(normalizedTokens, "")
+	}
+
+	if key, exists := supportedKeybindings[lookup]; exists {
+		return ParsedKey{key, modifier, normalizedTokens}, nil
+	}
+
+	if modifier != ModNone {
+		return ParsedKey{0, modifier, normalizedTokens}, fmt.Errorf("unsupported keybinding: %s (+%+v)", lookup, modifier)
+	}
+
+	return ParsedKey{0, modifier, normalizedTokens}, fmt.Errorf("unsupported keybinding: %s", lookup)
+}
+
+// ParseAllKeybindings parses all strings to a Key.
+// Returns an error when something goes wrong.
+func ParseAllKeybindings(input string) ([]ParsedKey, error) {
+	ret := make([]ParsedKey, 0)
+	for _, value := range strings.Split(input, ",") {
+		key, err := ParseKeybinding(value)
+		if err != nil {
+			return nil, fmt.Errorf("could not parse keybinding '%s' from request '%s': %+v", value, input, err)
+		}
+		ret = append(ret, key)
+	}
+	if len(ret) == 0 {
+		return nil, fmt.Errorf("must have at least one keybinding")
+	}
+	return ret, nil
 }
 
 // matchKeypress returns if the keybinding matches the keypress.
@@ -129,6 +214,104 @@ const (
 	KeyBackspace2         = Key(termbox.KeyBackspace2)
 	KeyCtrl8              = Key(termbox.KeyCtrl8)
 )
+
+// All the indirect translations
+var translate = map[string]string{
+	"/":        "Slash",
+	"\\":       "Backslash",
+	"[":        "LsqBracket",
+	"]":        "RsqBracket",
+	"_":        "Underscore",
+	"escape":   "Esc",
+	"~":        "Tilde",
+	"pageup":   "Pgup",
+	"pagedown": "Pgdn",
+	"pgup":     "Pgup",
+	"pgdown":   "Pgdn",
+	"up":       "ArrowUp",
+	"down":     "ArrowDown",
+	"right":    "ArrowRight",
+	"left":     "ArrowLeft",
+	"ctl":      "Ctrl",
+}
+
+// All the direct translations
+var supportedKeybindings = map[string]Key{
+	"KeyF1":             KeyF1,
+	"KeyF2":             KeyF2,
+	"KeyF3":             KeyF3,
+	"KeyF4":             KeyF4,
+	"KeyF5":             KeyF5,
+	"KeyF6":             KeyF6,
+	"KeyF7":             KeyF7,
+	"KeyF8":             KeyF8,
+	"KeyF9":             KeyF9,
+	"KeyF10":            KeyF10,
+	"KeyF11":            KeyF11,
+	"KeyF12":            KeyF12,
+	"KeyInsert":         KeyInsert,
+	"KeyDelete":         KeyDelete,
+	"KeyHome":           KeyHome,
+	"KeyEnd":            KeyEnd,
+	"KeyPgup":           KeyPgup,
+	"KeyPgdn":           KeyPgdn,
+	"KeyArrowUp":        KeyArrowUp,
+	"KeyArrowDown":      KeyArrowDown,
+	"KeyArrowLeft":      KeyArrowLeft,
+	"KeyArrowRight":     KeyArrowRight,
+	"KeyCtrlTilde":      KeyCtrlTilde,
+	"KeyCtrl2":          KeyCtrl2,
+	"KeyCtrlSpace":      KeyCtrlSpace,
+	"KeyCtrlA":          KeyCtrlA,
+	"KeyCtrlB":          KeyCtrlB,
+	"KeyCtrlC":          KeyCtrlC,
+	"KeyCtrlD":          KeyCtrlD,
+	"KeyCtrlE":          KeyCtrlE,
+	"KeyCtrlF":          KeyCtrlF,
+	"KeyCtrlG":          KeyCtrlG,
+	"KeyBackspace":      KeyBackspace,
+	"KeyCtrlH":          KeyCtrlH,
+	"KeyTab":            KeyTab,
+	"KeyCtrlI":          KeyCtrlI,
+	"KeyCtrlJ":          KeyCtrlJ,
+	"KeyCtrlK":          KeyCtrlK,
+	"KeyCtrlL":          KeyCtrlL,
+	"KeyEnter":          KeyEnter,
+	"KeyCtrlM":          KeyCtrlM,
+	"KeyCtrlN":          KeyCtrlN,
+	"KeyCtrlO":          KeyCtrlO,
+	"KeyCtrlP":          KeyCtrlP,
+	"KeyCtrlQ":          KeyCtrlQ,
+	"KeyCtrlR":          KeyCtrlR,
+	"KeyCtrlS":          KeyCtrlS,
+	"KeyCtrlT":          KeyCtrlT,
+	"KeyCtrlU":          KeyCtrlU,
+	"KeyCtrlV":          KeyCtrlV,
+	"KeyCtrlW":          KeyCtrlW,
+	"KeyCtrlX":          KeyCtrlX,
+	"KeyCtrlY":          KeyCtrlY,
+	"KeyCtrlZ":          KeyCtrlZ,
+	"KeyEsc":            KeyEsc,
+	"KeyCtrlLsqBracket": KeyCtrlLsqBracket,
+	"KeyCtrl3":          KeyCtrl3,
+	"KeyCtrl4":          KeyCtrl4,
+	"KeyCtrlBackslash":  KeyCtrlBackslash,
+	"KeyCtrl5":          KeyCtrl5,
+	"KeyCtrlRsqBracket": KeyCtrlRsqBracket,
+	"KeyCtrl6":          KeyCtrl6,
+	"KeyCtrl7":          KeyCtrl7,
+	"KeyCtrlSlash":      KeyCtrlSlash,
+	"KeyCtrlUnderscore": KeyCtrlUnderscore,
+	"KeySpace":          KeySpace,
+	"KeyBackspace2":     KeyBackspace2,
+	"KeyCtrl8":          KeyCtrl8,
+	"MouseLeft":         MouseLeft,
+	"MouseMiddle":       MouseMiddle,
+	"MouseRight":        MouseRight,
+	"MouseRelease":      MouseRelease,
+	"MouseWheelUp":      MouseWheelUp,
+	"MouseWheelDown":    MouseWheelDown,
+}
 
 // Modifier allows to define special keys combinations. They can be used
 // in combination with Keys or Runes when a new keybinding is defined.
