@@ -8,23 +8,25 @@ import "github.com/jesseduffield/termbox-go"
 
 // Keybidings are used to link a given key-press event with a handler.
 type keybinding struct {
-	viewName string
-	contexts []string
-	key      Key
-	ch       rune
-	mod      Modifier
-	handler  func(*Gui, *View) error
+	viewName     string
+	contexts     []string
+	key          Key
+	ch           rune
+	mod          Modifier
+	handler      func(*Gui, *View) error
+	blindHandler func() error
 }
 
 // newKeybinding returns a new Keybinding object.
-func newKeybinding(viewname string, contexts []string, key Key, ch rune, mod Modifier, handler func(*Gui, *View) error) (kb *keybinding) {
+func newKeybinding(viewname string, contexts []string, key Key, ch rune, mod Modifier, handler func(*Gui, *View) error, blindHandler func() error) (kb *keybinding) {
 	kb = &keybinding{
-		viewName: viewname,
-		contexts: contexts,
-		key:      key,
-		ch:       ch,
-		mod:      mod,
-		handler:  handler,
+		viewName:     viewname,
+		contexts:     contexts,
+		key:          key,
+		ch:           ch,
+		mod:          mod,
+		handler:      handler,
+		blindHandler: blindHandler,
 	}
 	return kb
 }

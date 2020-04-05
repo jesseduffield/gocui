@@ -11,9 +11,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/go-errors/errors"
 
 	"github.com/jesseduffield/termbox-go"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -101,10 +103,11 @@ type Gui struct {
 	SearchEscapeKey    interface{}
 	NextSearchMatchKey interface{}
 	PrevSearchMatchKey interface{}
+	log                *logrus.Entry
 }
 
 // NewGui returns a new Gui object with a given output mode.
-func NewGui(mode OutputMode, supportOverlaps bool) (*Gui, error) {
+func NewGui(mode OutputMode, supportOverlaps bool, log *logrus.Entry) (*Gui, error) {
 	g := &Gui{}
 
 	var err error
@@ -135,6 +138,7 @@ func NewGui(mode OutputMode, supportOverlaps bool) (*Gui, error) {
 	g.SearchEscapeKey = KeyEsc
 	g.NextSearchMatchKey = 'n'
 	g.PrevSearchMatchKey = 'N'
+	g.log = log
 
 	return g, nil
 }
@@ -192,7 +196,7 @@ func (g *Gui) SetView(name string, x0, y0, x1, y1 int, overlaps byte) (*View, er
 		return v, nil
 	}
 
-	v := newView(name, x0, y0, x1, y1, g.outputMode)
+	v := newView(name, x0, y0, x1, y1, g.outputMode, g.log)
 	v.BgColor, v.FgColor = g.BgColor, g.FgColor
 	v.SelBgColor, v.SelFgColor = g.SelBgColor, g.SelFgColor
 	v.Overlaps = overlaps
@@ -317,7 +321,20 @@ func (g *Gui) SetKeybinding(viewname string, contexts []string, key interface{},
 	if err != nil {
 		return err
 	}
-	kb = newKeybinding(viewname, contexts, k, ch, mod, handler)
+	kb = newKeybinding(viewname, contexts, k, ch, mod, handler, nil)
+	g.keybindings = append(g.keybindings, kb)
+	return nil
+}
+
+// SetBlindKeybinding is for when your handler is of the form func() error, meaning it doesnt't need access to the gui struct or the current view.
+func (g *Gui) SetBlindKeybinding(viewname string, contexts []string, key interface{}, mod Modifier, handler func() error) error {
+	var kb *keybinding
+
+	k, ch, err := getKey(key)
+	if err != nil {
+		return err
+	}
+	kb = newKeybinding(viewname, contexts, k, ch, mod, nil, handler)
 	g.keybindings = append(g.keybindings, kb)
 	return nil
 }
@@ -765,35 +782,44 @@ func (g *Gui) drawListFooter(v *View, fgColor, bgColor Attribute) error {
 
 // draw manages the cursor and calls the draw function of a view.
 func (g *Gui) draw(v *View) error {
+	v.clearRunes()
+	wrapCounts, err := v.draw()
+	if err != nil {
+		return err
+	}
+
 	if g.Cursor {
-		if curview := g.currentView; curview != nil {
+		if curview := g.currentView; curview != nil && curview == v {
 			vMaxX, vMaxY := curview.Size()
-			if curview.cx < 0 {
-				curview.cx = 0
-			} else if curview.cx >= vMaxX {
-				curview.cx = vMaxX - 1
+			ox, oy := curview.Origin()
+			// for every time there was a wrap we need to move the view cursor down one line (the view cursor is the actual position in the view)
+			wrapHeight := 0
+			if len(wrapCounts) > 0 {
+				for _, wrapCount := range wrapCounts[0:curview.wcy] {
+					wrapHeight += wrapCount
+				}
 			}
-			if curview.cy < 0 {
-				curview.cy = 0
-			} else if curview.cy >= vMaxY {
-				curview.cy = vMaxY - 1
+			if len(curview.lines) > 0 {
+				wrapHeight += curview.wcx / vMaxX
 			}
 
-			gMaxX, gMaxY := g.Size()
-			cx, cy := curview.x0+curview.cx+1, curview.y0+curview.cy+1
-			if cx >= 0 && cx < gMaxX && cy >= 0 && cy < gMaxY {
-				termbox.SetCursor(cx, cy)
+			wrappedCx := curview.wcx % (vMaxX + 1)
+
+			frameOffset := 0
+			if curview.Frame {
+				frameOffset = 1
+			}
+			cx, cy := wrappedCx+1-ox, curview.wcy+wrapHeight+1-oy
+
+			if cx >= 0 && cx < vMaxX+frameOffset && cy >= 0 && cy <= vMaxY+frameOffset {
+				termbox.SetCursor(cx+curview.x0, cy+curview.y0)
 			} else {
 				termbox.HideCursor()
 			}
 		}
 	} else {
+		// TODO: verify that this shouldn't be inside the above if block
 		termbox.HideCursor()
-	}
-
-	v.clearRunes()
-	if err := v.draw(); err != nil {
-		return err
 	}
 	return nil
 }
@@ -811,8 +837,16 @@ func (g *Gui) onKey(ev *termbox.Event) error {
 		if matched {
 			break
 		}
-		if g.currentView != nil && g.currentView.Editable && g.currentView.Editor != nil {
-			g.currentView.Editor.Edit(g.currentView, Key(ev.Key), ev.Ch, Modifier(ev.Mod))
+		if g.currentView != nil {
+			// if we have a current view, and it's a pty view, get the event's bytes and write them to the input buffer
+			if g.currentView.Pty {
+				g.log.Warn("input bytes: ", spew.Sdump(ev.Bytes))
+				g.currentView.StdinWriter.Write(ev.Bytes)
+			}
+
+			if g.currentView.Editable && g.currentView.Editor != nil {
+				g.currentView.Editor.Edit(g.currentView, Key(ev.Key), ev.Ch, Modifier(ev.Mod))
+			}
 		}
 	case termbox.EventMouse:
 		mx, my := ev.MouseX, ev.MouseY
@@ -831,9 +865,14 @@ func (g *Gui) onKey(ev *termbox.Event) error {
 				}
 			}
 		}
-		if err := v.SetCursor(mx-v.x0-1, my-v.y0-1); err != nil {
-			return err
+		if !v.IgnoreClickPosition {
+			// TODO: only set cursor when there's a character underneath the position
+			ox, oy := v.Origin()
+			if err := v.SetCursor(mx-v.x0-1+ox, my-v.y0-1+oy); err != nil {
+				return err
+			}
 		}
+
 		if _, err := g.execKeybindings(v, ev); err != nil {
 			return err
 		}
@@ -866,7 +905,7 @@ func (g *Gui) execKeybindings(v *View, ev *termbox.Event) (matched bool, err err
 	}
 
 	for _, kb := range g.keybindings {
-		if kb.handler == nil {
+		if kb.handler == nil && kb.blindHandler == nil {
 			continue
 		}
 		if !kb.matchKeypress(Key(ev.Key), ev.Ch, Modifier(ev.Mod)) {
@@ -878,7 +917,7 @@ func (g *Gui) execKeybindings(v *View, ev *termbox.Event) (matched bool, err err
 		if kb.matchView(v.ParentView) {
 			matchingParentViewKb = kb
 		}
-		if kb.viewName == "" && ((v != nil && !v.Editable) || (kb.ch == 0 && kb.key != KeyCtrlU && kb.key != KeyCtrlA && kb.key != KeyCtrlE)) {
+		if kb.viewName == "" && ((v != nil && !v.Editable) || (kb.ch == 0 && kb.key != KeyCtrlU && kb.key != KeyCtrlA && kb.key != KeyCtrlE)) && !v.Pty {
 			globalKb = kb
 		}
 	}
@@ -893,9 +932,16 @@ func (g *Gui) execKeybindings(v *View, ev *termbox.Event) (matched bool, err err
 
 // execKeybinding executes a given keybinding
 func (g *Gui) execKeybinding(v *View, kb *keybinding) (bool, error) {
-	if err := kb.handler(g, v); err != nil {
-		return false, err
+	if kb.handler != nil {
+		if err := kb.handler(g, v); err != nil {
+			return false, err
+		}
+	} else if kb.blindHandler != nil {
+		if err := kb.blindHandler(); err != nil {
+			return false, err
+		}
 	}
+
 	return true, nil
 }
 
