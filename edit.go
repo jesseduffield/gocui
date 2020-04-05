@@ -65,7 +65,7 @@ func simpleEditor(v *View, key Key, ch rune, mod Modifier) {
 // EditWrite writes a rune at the cursor position.
 func (v *View) EditWrite(ch rune) {
 	w := runewidth.RuneWidth(ch)
-	v.writeRune(v.cx, v.cy, ch)
+	v.writeRune(v.wcx, v.wcy, ch)
 	v.moveCursor(w, 0, true)
 }
 
@@ -114,7 +114,7 @@ func (v *View) EditGotoToEndOfLine() {
 // EditDelete deletes a rune at the cursor position. back determines the
 // direction.
 func (v *View) EditDelete(back bool) {
-	x, y := v.ox+v.cx, v.oy+v.cy
+	x, y := v.ox+v.wcx, v.oy+v.wcy
 	if y < 0 {
 		return
 	} else if y >= len(v.viewLines) {
@@ -137,39 +137,39 @@ func (v *View) EditDelete(back bool) {
 			}
 
 			if v.viewLines[y].linesX == 0 { // regular line
-				v.mergeLines(v.cy - 1)
+				v.mergeLines(v.wcy - 1)
 				if len(v.viewLines[y-1].line) < maxPrevWidth {
 					v.MoveCursor(-1, 0, true)
 				}
 			} else { // wrapped line
-				n, _ := v.deleteRune(len(v.viewLines[y-1].line)-1, v.cy-1)
+				n, _ := v.deleteRune(len(v.viewLines[y-1].line)-1, v.wcy-1)
 				v.MoveCursor(-n, 0, true)
 			}
 		} else { // middle/end of the line
-			n, _ := v.deleteRune(v.cx-1, v.cy)
+			n, _ := v.deleteRune(v.wcx-1, v.wcy)
 			v.MoveCursor(-n, 0, true)
 		}
 	} else {
 		if x == len(v.viewLines[y].line) { // end of the line
-			v.mergeLines(v.cy)
+			v.mergeLines(v.wcy)
 		} else { // start/middle of the line
-			v.deleteRune(v.cx, v.cy)
+			v.deleteRune(v.wcx, v.wcy)
 		}
 	}
 }
 
 // EditNewLine inserts a new line under the cursor.
 func (v *View) EditNewLine() {
-	v.breakLine(v.cx, v.cy)
+	v.breakLine(v.wcx, v.wcy)
 	v.ox = 0
-	v.cy = v.cy + 1
-	v.cx = 0
+	v.wcy = v.wcy + 1
+	v.wcx = 0
 }
 
 // MoveCursor moves the cursor taking into account the width of the line/view,
 // displacing the origin if necessary.
 func (v *View) MoveCursor(dx, dy int, writeMode bool) {
-	ox, oy := v.cx+v.ox, v.cy+v.oy
+	ox, oy := v.wcx+v.ox, v.wcy+v.oy
 	x, y := ox+dx, oy+dy
 
 	if y < 0 || y >= len(v.viewLines) {
@@ -213,7 +213,7 @@ func (v *View) MoveCursor(dx, dy int, writeMode bool) {
 
 func (v *View) moveCursor(dx, dy int, writeMode bool) {
 	maxX, maxY := v.Size()
-	cx, cy := v.cx+dx, v.cy+dy
+	cx, cy := v.wcx+dx, v.wcy+dy
 	x, y := v.ox+cx, v.oy+cy
 
 	var curLineWidth, prevLineWidth int
@@ -245,12 +245,12 @@ func (v *View) moveCursor(dx, dy int, writeMode bool) {
 				if !v.Wrap {
 					v.ox = 0
 				}
-				v.cx = 0
+				v.wcx = 0
 			}
 		} else { // vertical movement
 			if curLineWidth > 0 { // move cursor to the EOL
 				if v.Wrap {
-					v.cx = curLineWidth
+					v.wcx = curLineWidth
 				} else {
 					ncx := curLineWidth - v.ox
 					if ncx < 0 {
@@ -258,9 +258,9 @@ func (v *View) moveCursor(dx, dy int, writeMode bool) {
 						if v.ox < 0 {
 							v.ox = 0
 						}
-						v.cx = 0
+						v.wcx = 0
 					} else {
-						v.cx = ncx
+						v.wcx = ncx
 					}
 				}
 			} else {
@@ -268,14 +268,14 @@ func (v *View) moveCursor(dx, dy int, writeMode bool) {
 					if !v.Wrap {
 						v.ox = 0
 					}
-					v.cx = 0
+					v.wcx = 0
 				}
 			}
 		}
 	} else if cx < 0 {
 		if !v.Wrap && v.ox > 0 { // move origin to the left
 			v.ox += cx
-			v.cx = 0
+			v.wcx = 0
 		} else { // move to previous line
 			cy--
 			if prevLineWidth > 0 {
@@ -286,23 +286,23 @@ func (v *View) moveCursor(dx, dy int, writeMode bool) {
 					}
 					v.ox = nox
 				}
-				v.cx = prevLineWidth
+				v.wcx = prevLineWidth
 			} else {
 				if !v.Wrap {
 					v.ox = 0
 				}
-				v.cx = 0
+				v.wcx = 0
 			}
 		}
 	} else { // stay on the same line
 		if v.Wrap {
-			v.cx = cx
+			v.wcx = cx
 		} else {
 			if cx >= maxX {
 				v.ox += cx - maxX + 1
-				v.cx = maxX
+				v.wcx = maxX
 			} else {
-				v.cx = cx
+				v.wcx = cx
 			}
 		}
 	}
@@ -316,7 +316,7 @@ func (v *View) moveCursor(dx, dy int, writeMode bool) {
 		if cy >= maxY {
 			v.oy++
 		} else {
-			v.cy = cy
+			v.wcy = cy
 		}
 	}
 }
