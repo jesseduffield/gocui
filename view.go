@@ -393,6 +393,22 @@ func (v *View) Cursor() (x, y int) {
 	return v.cx, v.cy
 }
 
+// writeCursor returns the write cursor position of the view.
+func (v *View) writeCursor() (x, y int) {
+	return v.ox + v.wcx, v.oy + v.wcy
+}
+
+// SetCursor sets the cursor position of the view at the given point,
+// relative to the view. It checks if the position is valid.
+func (v *View) setWriteCursor(x, y int) error {
+	if x < 0 || y < 0 {
+		return nil
+	}
+	v.wcx = x
+	v.wcy = y
+	return nil
+}
+
 // SetOrigin sets the origin position of the view's internal buffer,
 // so the buffer starts to be printed from this point, which means that
 // it is linked with the origin point of view. It can be used to
