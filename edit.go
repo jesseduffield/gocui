@@ -175,10 +175,10 @@ func (v *View) EditDelete(back bool) {
 			}
 
 			if v.viewLines[y].linesX == 0 { // regular line
-				v.mergeLines(v.cy - 1)
 				if len(v.viewLines[y-1].line) < maxPrevWidth {
 					v.MoveCursor(-1, 0, true)
 				}
+				v.mergeLines(v.cy)
 			} else { // wrapped line
 				n, _ := v.deleteRune(len(v.viewLines[y-1].line)-1, v.cy-1)
 				v.MoveCursor(-n, 0, true)
