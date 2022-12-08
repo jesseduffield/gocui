@@ -5,6 +5,7 @@
 package gocui
 
 import (
+	"runtime"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -102,6 +103,18 @@ func (g *Gui) tcellInitSimulation() error {
 // content (rune) and attributes using provided OutputMode
 func tcellSetCell(x, y int, ch rune, fg, bg Attribute, outputMode OutputMode) {
 	st := getTcellStyle(oldStyle{fg: fg, bg: bg, outputMode: outputMode})
+	if runtime.GOOS == "windows" {
+		// Dirty workaround for Windows.
+		// https://github.com/jesseduffield/lazygit/issues/1383
+		w := runewidth.RuneWidth(ch)
+		for i := 1; i < w; i++ {
+			Screen.SetContent(x+i, y, 0, nil, st)
+		}
+
+		if _, _, st, w := Screen.GetContent(x-1, y); w > 1 {
+			Screen.SetContent(x-1, y, 0, nil, st)
+		}
+	}
 	Screen.SetContent(x, y, ch, nil, st)
 }
 
