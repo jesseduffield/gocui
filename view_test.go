@@ -221,7 +221,48 @@ func TestLineWrap(t *testing.T) {
 			expected: []string{
 				"one-two-",
 				"three-",
-				"four-five",
+				"four-",
+				"five",
+			},
+		},
+		{
+			name:    "Several lines using all the available width",
+			line:    "aaa bb cc ddd-ee ff",
+			columns: 5,
+			expected: []string{
+				"aaa",
+				"bb cc",
+				"ddd-",
+				"ee ff",
+			},
+		},
+		{
+			name:    "Multi-cell runes",
+			line:    "🐤🐤🐤 🐝🐝 🙉 🦊🦊🦊-🐬🐬 🦢🦢",
+			columns: 9,
+			expected: []string{
+				"🐤🐤🐤",
+				"🐝🐝 🙉",
+				"🦊🦊🦊-",
+				"🐬🐬 🦢🦢",
+			},
+		},
+		{
+			name:    "Space in last column",
+			line:    "hello world",
+			columns: 6,
+			expected: []string{
+				"hello",
+				"world",
+			},
+		},
+		{
+			name:    "Hyphen in last column",
+			line:    "hello-world",
+			columns: 6,
+			expected: []string{
+				"hello-",
+				"world",
 			},
 		},
 		{
