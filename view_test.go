@@ -117,6 +117,27 @@ func TestUpdatedCursorAndOrigin(t *testing.T) {
 	}
 }
 
+func TestAutoRenderingHyperlinks(t *testing.T) {
+	v := NewView("name", 0, 0, 10, 10, OutputNormal)
+	v.AutoRenderHyperLinks = true
+
+	v.writeRunes([]rune("htt"))
+	// No hyperlinks are generated for incomplete URLs
+	assert.Equal(t, "", v.lines[0][0].hyperlink)
+	// Writing more characters to the same line makes the link complete (even
+	// though we didn't see a newline yet)
+	v.writeRunes([]rune("ps://example.com"))
+	assert.Equal(t, "https://example.com", v.lines[0][0].hyperlink)
+
+	v.Clear()
+	// Valid but incomplete URL
+	v.writeRunes([]rune("https://exa"))
+	assert.Equal(t, "https://exa", v.lines[0][0].hyperlink)
+	// Writing more characters to the same fixes the link
+	v.writeRunes([]rune("mple.com"))
+	assert.Equal(t, "https://example.com", v.lines[0][0].hyperlink)
+}
+
 func TestContainsColoredText(t *testing.T) {
 	hexColor := func(text string, hexStr string) []cell {
 		cells := make([]cell, len(text))
