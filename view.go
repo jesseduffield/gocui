@@ -1675,10 +1675,11 @@ func (v *View) RenderTextArea() {
 func updatedCursorAndOrigin(prevOrigin int, size int, cursor int) (int, int) {
 	var newViewCursor int
 	newOrigin := prevOrigin
+	usableSize := size - 1
 
-	if cursor > prevOrigin+size {
-		newOrigin = cursor - size
-		newViewCursor = size
+	if cursor > prevOrigin+usableSize {
+		newOrigin = cursor - usableSize
+		newViewCursor = usableSize
 	} else if cursor < prevOrigin {
 		newOrigin = cursor
 		newViewCursor = 0
