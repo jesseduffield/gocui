@@ -1498,6 +1498,8 @@ func (g *Gui) execKeybindings(v *View, ev *GocuiEvent) error {
 		}
 	}
 
+	var err error
+
 	for _, kb := range g.keybindings {
 		if kb.handler == nil {
 			continue
@@ -1506,7 +1508,7 @@ func (g *Gui) execKeybindings(v *View, ev *GocuiEvent) error {
 			continue
 		}
 		if g.matchView(v, kb) {
-			err := g.execKeybinding(v, kb)
+			err = g.execKeybinding(v, kb)
 			if !errors.Is(err, ErrKeybindingNotHandled) {
 				return err
 			}
@@ -1522,7 +1524,7 @@ func (g *Gui) execKeybindings(v *View, ev *GocuiEvent) error {
 		}
 	}
 	if matchingParentViewKb != nil {
-		err := g.execKeybinding(v.ParentView, matchingParentViewKb)
+		err = g.execKeybinding(v.ParentView, matchingParentViewKb)
 		if !errors.Is(err, ErrKeybindingNotHandled) {
 			return err
 		}
@@ -1536,9 +1538,9 @@ func (g *Gui) execKeybindings(v *View, ev *GocuiEvent) error {
 	}
 
 	if globalKb != nil {
-		return g.execKeybinding(v, globalKb)
+		err = g.execKeybinding(v, globalKb)
 	}
-	return nil
+	return err
 }
 
 // execKeybinding executes a given keybinding
