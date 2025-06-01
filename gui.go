@@ -1507,12 +1507,12 @@ func (g *Gui) execKeybindings(v *View, ev *GocuiEvent) error {
 		}
 		if g.matchView(v, kb) {
 			err := g.execKeybinding(v, kb)
-			if IsKeybindingNotHandled(err) {
-				matchingParentViewKb = nil
-				break
-			} else {
+			if !IsKeybindingNotHandled(err) {
 				return err
 			}
+
+			matchingParentViewKb = nil
+			break
 		}
 		if v != nil && g.matchView(v.ParentView, kb) {
 			matchingParentViewKb = kb
