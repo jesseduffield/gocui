@@ -786,7 +786,7 @@ func (g *Gui) MainLoop() error {
 }
 
 func (g *Gui) handleError(err error) error {
-	if err != nil && !IsQuit(err) && g.ErrorHandler != nil {
+	if err != nil && !standardErrors.Is(err, ErrQuit) && g.ErrorHandler != nil {
 		return g.ErrorHandler(err)
 	}
 
@@ -1507,7 +1507,7 @@ func (g *Gui) execKeybindings(v *View, ev *GocuiEvent) error {
 		}
 		if g.matchView(v, kb) {
 			err := g.execKeybinding(v, kb)
-			if !IsKeybindingNotHandled(err) {
+			if !errors.Is(err, ErrKeybindingNotHandled) {
 				return err
 			}
 
@@ -1523,7 +1523,7 @@ func (g *Gui) execKeybindings(v *View, ev *GocuiEvent) error {
 	}
 	if matchingParentViewKb != nil {
 		err := g.execKeybinding(v.ParentView, matchingParentViewKb)
-		if !IsKeybindingNotHandled(err) {
+		if !errors.Is(err, ErrKeybindingNotHandled) {
 			return err
 		}
 	}
@@ -1600,20 +1600,6 @@ func (g *Gui) isBlacklisted(k Key) bool {
 		}
 	}
 	return false
-}
-
-// IsUnknownView reports whether the contents of an error is "unknown view".
-func IsUnknownView(err error) bool {
-	return err != nil && err.Error() == ErrUnknownView.Error()
-}
-
-// IsQuit reports whether the contents of an error is "quit".
-func IsQuit(err error) bool {
-	return err != nil && err.Error() == ErrQuit.Error()
-}
-
-func IsKeybindingNotHandled(err error) bool {
-	return err != nil && err.Error() == ErrKeybindingNotHandled.Error()
 }
 
 func (g *Gui) Suspend() error {
