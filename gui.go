@@ -1428,7 +1428,9 @@ func (g *Gui) execMouseKeybindings(view *View, ev *GocuiEvent, opts ViewMouseBin
 	// first pass looks for ones that match the focused view
 	for _, binding := range g.viewMouseBindings {
 		if isMatch(binding) && binding.FocusedView != "" && binding.FocusedView == g.currentView.Name() {
-			return true, binding.Handler(opts)
+			if err := binding.Handler(opts); !errors.Is(err, ErrKeybindingNotHandled) {
+				return true, err
+			}
 		}
 	}
 
