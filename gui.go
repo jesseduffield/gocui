@@ -95,6 +95,8 @@ type ViewMouseBinding struct {
 type ViewMouseBindingOpts struct {
 	X int // i.e. origin x + cursor x
 	Y int // i.e. origin y + cursor y
+
+	Key Key // which button was clicked (will be one of the Mouse* constants)
 }
 
 type GuiMutexes struct {
@@ -1385,7 +1387,7 @@ func (g *Gui) onKey(ev *GocuiEvent) error {
 		}
 
 		if IsMouseKey(ev.Key) {
-			opts := ViewMouseBindingOpts{X: newX, Y: newY}
+			opts := ViewMouseBindingOpts{X: newX, Y: newY, Key: ev.Key}
 			matched, err := g.execMouseKeybindings(v, ev, opts)
 			if err != nil {
 				return err
