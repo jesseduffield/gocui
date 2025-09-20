@@ -778,6 +778,27 @@ func Test_AutoWrapContent(t *testing.T) {
 			expectedCursorMapping:  []CursorMapping{{4, 5}, {16, 18}},
 		},
 		{
+			name:                   "don't break at space after footnote symbol",
+			content:                "abc\n[1]: https://long/link\ndef",
+			autoWrapWidth:          7,
+			expectedWrappedContent: "abc\n[1]: https://long/link\ndef",
+			expectedCursorMapping:  []CursorMapping{},
+		},
+		{
+			name:                   "don't break at space after footnote symbol at soft line start",
+			content:                "abc def [1]: https://long/link\nghi",
+			autoWrapWidth:          7,
+			expectedWrappedContent: "abc def \n[1]: https://long/link\nghi",
+			expectedCursorMapping:  []CursorMapping{{8, 9}},
+		},
+		{
+			name:                   "do break at subsequent space after footnote symbol",
+			content:                "abc\n[1]: normal text follows\ndef",
+			autoWrapWidth:          7,
+			expectedWrappedContent: "abc\n[1]: normal \ntext \nfollows\ndef",
+			expectedCursorMapping:  []CursorMapping{{16, 17}, {21, 23}},
+		},
+		{
 			name:                   "hard line breaks",
 			content:                "abc\ndef\n",
 			autoWrapWidth:          7,
