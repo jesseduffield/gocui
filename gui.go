@@ -16,6 +16,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/go-errors/errors"
 	"github.com/mattn/go-runewidth"
+	"github.com/rivo/uniseg"
 )
 
 // OutputMode represents an output mode, which determines how colors
@@ -301,12 +302,13 @@ func (g *Gui) Size() (x, y int) {
 // SetRune writes a rune at the given point, relative to the top-left
 // corner of the terminal. It checks if the position is valid and applies
 // the given colors.
+// Should only be used if you know that the given rune is not part of a grapheme cluster.
 func (g *Gui) SetRune(x, y int, ch rune, fgColor, bgColor Attribute) error {
 	if x < 0 || y < 0 || x >= g.maxX || y >= g.maxY {
 		// swallowing error because it's not that big of a deal
 		return nil
 	}
-	tcellSetCell(x, y, ch, fgColor, bgColor, g.outputMode)
+	tcellSetCell(x, y, string(ch), fgColor, bgColor, g.outputMode)
 	return nil
 }
 
@@ -1368,13 +1370,13 @@ func (g *Gui) onKey(ev *GocuiEvent) error {
 				newCy = newY - v.oy
 			}
 
-			lastCharForLine := len(v.lines[newY])
-			for lastCharForLine > 0 && v.lines[newY][lastCharForLine-1].chr == 0 {
-				lastCharForLine--
+			visibleLineWidth := 0
+			for _, c := range v.lines[newY] {
+				visibleLineWidth += uniseg.StringWidth(c.chr)
 			}
-			if lastCharForLine < newX {
-				newX = lastCharForLine
-				newCx = lastCharForLine - v.ox
+			if visibleLineWidth < newX {
+				newX = visibleLineWidth
+				newCx = visibleLineWidth - v.ox
 			}
 		}
 		if !IsMouseScrollKey(ev.Key) {

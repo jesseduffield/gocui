@@ -97,10 +97,10 @@ func (g *Gui) tcellInitSimulation(width int, height int) error {
 }
 
 // tcellSetCell sets the character cell at a given location to the given
-// content (rune) and attributes using provided OutputMode
-func tcellSetCell(x, y int, ch rune, fg, bg Attribute, outputMode OutputMode) {
+// content (grapheme cluster) and attributes using provided OutputMode
+func tcellSetCell(x, y int, ch string, fg, bg Attribute, outputMode OutputMode) {
 	st := getTcellStyle(oldStyle{fg: fg, bg: bg, outputMode: outputMode})
-	Screen.SetContent(x, y, ch, nil, st)
+	Screen.Put(x, y, ch, st)
 }
 
 // getTcellStyle creates tcell.Style from Attributes

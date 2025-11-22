@@ -46,9 +46,9 @@ func SimpleEditor(v *View, key Key, ch rune, mod Modifier) bool {
 	case key == KeyArrowRight:
 		v.TextArea.MoveCursorRight()
 	case key == KeyEnter:
-		v.TextArea.TypeRune('\n')
+		v.TextArea.TypeCharacter("\n")
 	case key == KeySpace:
-		v.TextArea.TypeRune(' ')
+		v.TextArea.TypeCharacter(" ")
 	case key == KeyInsert:
 		v.TextArea.ToggleOverwrite()
 	case key == KeyCtrlU:
@@ -64,7 +64,7 @@ func SimpleEditor(v *View, key Key, ch rune, mod Modifier) bool {
 	case key == KeyCtrlY:
 		v.TextArea.Yank()
 	case unicode.IsPrint(ch):
-		v.TextArea.TypeRune(ch)
+		v.TextArea.TypeCharacter(string(ch))
 	default:
 		return false
 	}

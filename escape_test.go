@@ -10,7 +10,7 @@ func TestParseOne(t *testing.T) {
 	var ei *escapeInterpreter
 
 	ei = newEscapeInterpreter(OutputNormal)
-	isEscape, err := ei.parseOne('a')
+	isEscape, err := ei.parseOne([]byte{'a'})
 	assert.Equal(t, false, isEscape)
 	assert.NoError(t, err)
 
@@ -131,8 +131,8 @@ func TestParseOneColours(t *testing.T) {
 }
 
 func parseEscRunes(t *testing.T, ei *escapeInterpreter, runes string) {
-	for _, r := range runes {
-		isEscape, err := ei.parseOne(r)
+	for _, b := range []byte(runes) {
+		isEscape, err := ei.parseOne([]byte{b})
 		assert.Equal(t, true, isEscape)
 		assert.NoError(t, err)
 	}
