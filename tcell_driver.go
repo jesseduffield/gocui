@@ -6,7 +6,6 @@ package gocui
 
 import (
 	"github.com/gdamore/tcell/v2"
-	"github.com/mattn/go-runewidth"
 )
 
 // We probably don't want this being a global variable for YOLO for now
@@ -54,7 +53,6 @@ var runeReplacements = map[rune]string{
 
 // tcellInit initializes tcell screen for use.
 func (g *Gui) tcellInit(runeReplacements map[rune]string) error {
-	runewidth.DefaultCondition.EastAsianWidth = false
 	tcell.SetEncodingFallback(tcell.EncodingFallbackASCII)
 
 	if s, e := tcell.NewScreen(); e != nil {

@@ -15,7 +15,6 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/go-errors/errors"
-	"github.com/mattn/go-runewidth"
 	"github.com/rivo/uniseg"
 )
 
@@ -1104,7 +1103,7 @@ func (g *Gui) drawTitle(v *View, fgColor, bgColor Attribute) error {
 		if err := g.SetRune(x, v.y0, ch, fgColor, bgColor); err != nil {
 			return err
 		}
-		x += runewidth.RuneWidth(ch)
+		x += uniseg.StringWidth(string(ch))
 	}
 	for i, ch := range str {
 		if x < 0 {
@@ -1129,7 +1128,7 @@ func (g *Gui) drawTitle(v *View, fgColor, bgColor Attribute) error {
 		if err := g.SetRune(x, v.y0, ch, currentFgColor, currentBgColor); err != nil {
 			return err
 		}
-		x += runewidth.RuneWidth(ch)
+		x += uniseg.StringWidth(string(ch))
 	}
 	return nil
 }
@@ -1140,7 +1139,7 @@ func (g *Gui) drawSubtitle(v *View, fgColor, bgColor Attribute) error {
 		return nil
 	}
 
-	start := v.x1 - 5 - runewidth.StringWidth(v.Subtitle)
+	start := v.x1 - 5 - uniseg.StringWidth(v.Subtitle)
 	if start < v.x0 {
 		return nil
 	}
@@ -1152,7 +1151,7 @@ func (g *Gui) drawSubtitle(v *View, fgColor, bgColor Attribute) error {
 		if err := g.SetRune(x, v.y0, ch, fgColor, bgColor); err != nil {
 			return err
 		}
-		x += runewidth.RuneWidth(ch)
+		x += uniseg.StringWidth(string(ch))
 	}
 	return nil
 }
@@ -1169,7 +1168,7 @@ func (g *Gui) drawListFooter(v *View, fgColor, bgColor Attribute) error {
 		return nil
 	}
 
-	start := v.x1 - 1 - runewidth.StringWidth(message)
+	start := v.x1 - 1 - uniseg.StringWidth(message)
 	if start < v.x0 {
 		return nil
 	}
@@ -1181,7 +1180,7 @@ func (g *Gui) drawListFooter(v *View, fgColor, bgColor Attribute) error {
 		if err := g.SetRune(x, v.y1, ch, fgColor, bgColor); err != nil {
 			return err
 		}
-		x += runewidth.RuneWidth(ch)
+		x += uniseg.StringWidth(string(ch))
 	}
 	return nil
 }

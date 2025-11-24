@@ -13,7 +13,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/mattn/go-runewidth"
 	"github.com/rivo/uniseg"
 )
 
@@ -1085,7 +1084,7 @@ func (v *View) updateSearchPositions() {
 
 		searchPositionsForLine := func(line []cell, y int) []SearchPosition {
 			var result []SearchPosition
-			searchStringWidth := runewidth.StringWidth(v.searcher.searchString)
+			searchStringWidth := uniseg.StringWidth(v.searcher.searchString)
 			x := 0
 			for startIdx, cell := range line {
 				found := true
@@ -1584,11 +1583,11 @@ func (v *View) GetClickedTabIndex(x int) int {
 		return -1
 	}
 	for i, tab := range v.Tabs {
-		charX += runewidth.StringWidth(tab)
+		charX += uniseg.StringWidth(tab)
 		if x <= charX {
 			return i
 		}
-		charX += runewidth.StringWidth(" - ")
+		charX += uniseg.StringWidth(" - ")
 		if x <= charX {
 			return -1
 		}
