@@ -397,6 +397,7 @@ type viewLine struct {
 
 type cell struct {
 	chr              string // a grapheme cluster
+	width            int    // number of terminal cells occupied by chr (always 1 or 2)
 	bgColor, fgColor Attribute
 	hyperlink        string
 }
@@ -700,25 +701,26 @@ func (v *View) makeWriteable(x, y int) {
 	}
 }
 
-// writeCells copies []cell to specified location (x, y)
+// writeCells copies []cell to (v.wx, v.wy), and advances v.wx accordingly.
 // !!! caller MUST ensure that specified location (x, y) is writeable by calling makeWriteable
-func (v *View) writeCells(x, y int, cells []cell) {
+func (v *View) writeCells(cells []cell) {
 	var newLen int
 	// use maximum len available
-	line := v.lines[y][:cap(v.lines[y])]
-	maxCopy := len(line) - x
+	line := v.lines[v.wy][:cap(v.lines[v.wy])]
+	maxCopy := len(line) - v.wx
 	if maxCopy < len(cells) {
-		copy(line[x:], cells[:maxCopy])
+		copy(line[v.wx:], cells[:maxCopy])
 		line = append(line, cells[maxCopy:]...)
 		newLen = len(line)
 	} else { // maxCopy >= len(cells)
-		copy(line[x:], cells)
-		newLen = x + len(cells)
-		if newLen < len(v.lines[y]) {
-			newLen = len(v.lines[y])
+		copy(line[v.wx:], cells)
+		newLen = v.wx + len(cells)
+		if newLen < len(v.lines[v.wy]) {
+			newLen = len(v.lines[v.wy])
 		}
 	}
-	v.lines[y] = line[:newLen]
+	v.lines[v.wy] = line[:newLen]
+	v.wx += len(cells)
 }
 
 // Write appends a byte slice into the view's internal buffer. Because
@@ -744,8 +746,9 @@ func (v *View) write(p []byte) {
 	finishLine := func() {
 		v.autoRenderHyperlinksInCurrentLine()
 		if v.wx >= len(v.lines[v.wy]) {
-			v.writeCells(v.wx, v.wy, []cell{{
+			v.writeCells([]cell{{
 				chr:     "",
+				width:   0,
 				fgColor: 0,
 				bgColor: 0,
 			}})
@@ -773,10 +776,11 @@ func (v *View) write(p []byte) {
 
 	state := -1
 	var chr []byte
+	var width int
 	remaining := p[:until]
 
 	for len(remaining) > 0 {
-		chr, remaining, _, state = uniseg.FirstGraphemeCluster(remaining, state)
+		chr, remaining, width, state = uniseg.FirstGraphemeCluster(remaining, state)
 
 		switch {
 		case characterEquals(chr, '\n'):
@@ -786,16 +790,13 @@ func (v *View) write(p []byte) {
 			finishLine()
 			v.wx = 0
 		default:
-			truncateLine, cells := v.parseInput(chr, v.wx, v.wy)
+			truncateLine, cells := v.parseInput(chr, width, v.wx, v.wy)
 			if cells == nil {
 				continue
 			}
-			v.writeCells(v.wx, v.wy, cells)
+			v.writeCells(cells)
 			if truncateLine {
-				length := v.wx + len(cells)
-				v.lines[v.wy] = v.lines[v.wy][:length]
-			} else {
-				v.wx += len(cells)
+				v.lines[v.wy] = v.lines[v.wy][:v.wx]
 			}
 		}
 	}
@@ -880,7 +881,7 @@ func (v *View) autoRenderHyperlinksInCurrentLine() {
 // parseInput parses char by char the input written to the View. It returns nil
 // while processing ESC sequences. Otherwise, it returns a cell slice that
 // contains the processed data.
-func (v *View) parseInput(ch []byte, x int, _ int) (bool, []cell) {
+func (v *View) parseInput(ch []byte, width int, x int, _ int) (bool, []cell) {
 	cells := []cell{}
 	truncateLine := false
 
@@ -891,6 +892,7 @@ func (v *View) parseInput(ch []byte, x int, _ int) (bool, []cell) {
 				fgColor: v.FgColor,
 				bgColor: v.BgColor,
 				chr:     chr,
+				width:   uniseg.StringWidth(chr),
 			}
 			cells = append(cells, c)
 		}
@@ -902,10 +904,11 @@ func (v *View) parseInput(ch []byte, x int, _ int) (bool, []cell) {
 			v.ei.instructionRead()
 			cx := 0
 			for _, cell := range v.lines[v.wy][0:v.wx] {
-				cx += uniseg.StringWidth(cell.chr)
+				cx += cell.width
 			}
 			repeatCount = v.InnerWidth() - cx
 			ch = []byte{' '}
+			width = 1
 			truncateLine = true
 		} else if isEscape {
 			// do not output anything
@@ -917,6 +920,7 @@ func (v *View) parseInput(ch []byte, x int, _ int) (bool, []cell) {
 				tabWidth = 4
 			}
 			ch = []byte{' '}
+			width = 1
 			repeatCount = tabWidth - (x % tabWidth)
 		}
 		c := cell{
@@ -924,6 +928,7 @@ func (v *View) parseInput(ch []byte, x int, _ int) (bool, []cell) {
 			bgColor:   v.ei.curBgColor,
 			hyperlink: v.ei.hyperlink.String(),
 			chr:       string(ch),
+			width:     width,
 		}
 		for i := 0; i < repeatCount; i++ {
 			cells = append(cells, c)
@@ -1101,7 +1106,7 @@ func (v *View) updateSearchPositions() {
 				if found {
 					result = append(result, SearchPosition{XStart: x, XEnd: x + searchStringWidth, Y: y})
 				}
-				x += uniseg.StringWidth(cell.chr)
+				x += cell.width
 			}
 			return result
 		}
@@ -1187,7 +1192,7 @@ func (v *View) draw() {
 		start = len(v.viewLines) - 1
 	}
 
-	emptyCell := cell{chr: " ", fgColor: ColorDefault, bgColor: ColorDefault}
+	emptyCell := cell{chr: " ", width: 1, fgColor: ColorDefault, bgColor: ColorDefault}
 	var prevFgColor Attribute
 
 	for y, vline := range v.viewLines[start:] {
@@ -1245,9 +1250,7 @@ func (v *View) draw() {
 
 			v.setCharacter(x, y, c.chr, fgColor, bgColor)
 
-			// Not sure why the previous code was here but it caused problems
-			// when typing wide characters in an editor
-			x += uniseg.StringWidth(c.chr)
+			x += c.width
 			cellIdx++
 		}
 	}
@@ -1535,7 +1538,7 @@ func lineWrap(line []cell, columns int) [][]cell {
 				offset = lastWhitespaceIndex + 1
 				n = 0
 				for _, c := range line[offset : i+1] {
-					n += uniseg.StringWidth(c.chr)
+					n += c.width
 				}
 			} else {
 				// in this case we're breaking mid-word

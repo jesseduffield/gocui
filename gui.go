@@ -1361,7 +1361,7 @@ func (g *Gui) onKey(ev *GocuiEvent) error {
 
 			visibleLineWidth := 0
 			for _, c := range v.lines[newY] {
-				visibleLineWidth += uniseg.StringWidth(c.chr)
+				visibleLineWidth += c.width
 			}
 			if visibleLineWidth < newX {
 				newX = visibleLineWidth

@@ -221,8 +221,9 @@ func stringToCells(s string) []cell {
 	state := -1
 	for len(s) > 0 {
 		var c string
-		c, s, _, state = uniseg.FirstGraphemeClusterInString(s, state)
-		cells = append(cells, cell{chr: c})
+		var w int
+		c, s, w, state = uniseg.FirstGraphemeClusterInString(s, state)
+		cells = append(cells, cell{chr: c, width: w})
 	}
 	return cells
 }

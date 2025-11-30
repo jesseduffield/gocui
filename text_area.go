@@ -549,8 +549,7 @@ func (self *TextArea) SetCursor2D(x int, y int) {
 			}
 			y--
 		} else if y == 0 {
-			chWidth := uniseg.StringWidth(c.char)
-			x -= chWidth
+			x -= c.width
 		}
 
 		newCursor++
