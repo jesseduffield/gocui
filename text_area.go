@@ -115,7 +115,7 @@ func (self *TextArea) autoWrapContent() {
 	}
 }
 
-func (self *TextArea) TypeRune(r rune) {
+func (self *TextArea) typeRune(r rune) {
 	if self.overwrite && !self.atEnd() {
 		self.content[self.cursor] = r
 	} else {
@@ -124,9 +124,13 @@ func (self *TextArea) TypeRune(r rune) {
 			append([]rune{r}, self.content[self.cursor:]...)...,
 		)
 	}
-	self.autoWrapContent()
 
 	self.cursor++
+}
+
+func (self *TextArea) TypeRune(r rune) {
+	self.typeRune(r)
+	self.autoWrapContent()
 }
 
 func (self *TextArea) BackSpaceChar() {
@@ -503,6 +507,8 @@ func (self *TextArea) Clear() {
 
 func (self *TextArea) TypeString(str string) {
 	for _, r := range str {
-		self.TypeRune(r)
+		self.typeRune(r)
 	}
+
+	self.autoWrapContent()
 }
