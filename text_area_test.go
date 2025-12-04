@@ -815,26 +815,27 @@ func Test_AutoWrapContent(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wrappedContent, cursorMapping := AutoWrapContent([]rune(tt.content), tt.autoWrapWidth)
-			if !reflect.DeepEqual(wrappedContent, []rune(tt.expectedWrappedContent)) {
-				t.Errorf("autoWrapContentImpl() wrappedContent = %v, expected %v", string(wrappedContent), tt.expectedWrappedContent)
+			textArea := &TextArea{content: []rune(tt.content), AutoWrapWidth: tt.autoWrapWidth, AutoWrap: true}
+			textArea.autoWrapContent()
+			if !reflect.DeepEqual(textArea.wrappedContent, []rune(tt.expectedWrappedContent)) {
+				t.Errorf("autoWrapContentImpl() wrappedContent = %v, expected %v", string(textArea.wrappedContent), tt.expectedWrappedContent)
 			}
-			if !reflect.DeepEqual(cursorMapping, tt.expectedCursorMapping) {
-				t.Errorf("autoWrapContentImpl() cursorMapping = %v, expected %v", cursorMapping, tt.expectedCursorMapping)
+			if !reflect.DeepEqual(textArea.cursorMapping, tt.expectedCursorMapping) {
+				t.Errorf("autoWrapContentImpl() cursorMapping = %v, expected %v", textArea.cursorMapping, tt.expectedCursorMapping)
 			}
 
 			// As a sanity check, run through all runes of the original content,
 			// convert the cursor to the wrapped cursor, and check that the rune
 			// in the wrapped content at that position is the same:
 			for i, r := range tt.content {
-				wrappedIndex := origCursorToWrappedCursor(i, cursorMapping)
-				if r != wrappedContent[wrappedIndex] {
-					t.Errorf("Runes in orig content and wrapped content don't match at %d: expected %v, got %v", i, r, wrappedContent[wrappedIndex])
+				wrappedIndex := textArea.origCursorToWrappedCursor(i)
+				if r != textArea.wrappedContent[wrappedIndex] {
+					t.Errorf("Runes in orig content and wrapped content don't match at %d: expected %v, got %v", i, r, textArea.wrappedContent[wrappedIndex])
 				}
 
 				// Also, check that converting the wrapped position back to the
 				// orig position yields the original value again:
-				origIndexAgain := wrappedCursorToOrigCursor(wrappedIndex, cursorMapping)
+				origIndexAgain := textArea.wrappedCursorToOrigCursor(wrappedIndex)
 				if i != origIndexAgain {
 					t.Errorf("wrappedCursorToOrigCursor doesn't yield original position: expected %d, got %d", i, origIndexAgain)
 				}
