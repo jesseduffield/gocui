@@ -411,9 +411,9 @@ func (self *TextArea) Yank() {
 	self.TypeString(self.clipboard)
 }
 
-func origCursorToWrappedCursor(origCursor int, cursorMapping []CursorMapping) int {
+func (self *TextArea) origCursorToWrappedCursor(origCursor int) int {
 	prevMapping := CursorMapping{0, 0}
-	for _, mapping := range cursorMapping {
+	for _, mapping := range self.cursorMapping {
 		if origCursor < mapping.Orig {
 			break
 		}
@@ -423,13 +423,9 @@ func origCursorToWrappedCursor(origCursor int, cursorMapping []CursorMapping) in
 	return origCursor + prevMapping.Wrapped - prevMapping.Orig
 }
 
-func (self *TextArea) origCursorToWrappedCursor(origCursor int) int {
-	return origCursorToWrappedCursor(origCursor, self.cursorMapping)
-}
-
-func wrappedCursorToOrigCursor(wrappedCursor int, cursorMapping []CursorMapping) int {
+func (self *TextArea) wrappedCursorToOrigCursor(wrappedCursor int) int {
 	prevMapping := CursorMapping{0, 0}
-	for _, mapping := range cursorMapping {
+	for _, mapping := range self.cursorMapping {
 		if wrappedCursor < mapping.Wrapped {
 			break
 		}
@@ -437,10 +433,6 @@ func wrappedCursorToOrigCursor(wrappedCursor int, cursorMapping []CursorMapping)
 	}
 
 	return wrappedCursor + prevMapping.Orig - prevMapping.Wrapped
-}
-
-func (self *TextArea) wrappedCursorToOrigCursor(wrappedCursor int) int {
-	return wrappedCursorToOrigCursor(wrappedCursor, self.cursorMapping)
 }
 
 func (self *TextArea) GetCursorXY() (int, int) {
