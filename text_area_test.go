@@ -11,6 +11,7 @@ import (
 func TestTextArea(t *testing.T) {
 	tests := []struct {
 		actions           func(*TextArea)
+		wrapWidth         int
 		expectedContent   string
 		expectedCursor    int
 		expectedClipboard string
@@ -217,6 +218,24 @@ func TestTextArea(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
+				textarea.TypeString("aaa\nbbb")
+				textarea.MoveLeftWord()
+			},
+			expectedContent: "aaa\nbbb",
+			expectedCursor:  4,
+		},
+		{
+			actions: func(textarea *TextArea) {
+				textarea.TypeString("aaa bbb")
+				textarea.GoToStartOfLine()
+				textarea.MoveLeftWord()
+			},
+			wrapWidth:       4,
+			expectedContent: "aaa bbb",
+			expectedCursor:  0,
+		},
+		{
+			actions: func(textarea *TextArea) {
 				textarea.TypeString("aaa bbb\n")
 				textarea.MoveLeftWord()
 			},
@@ -258,6 +277,17 @@ func TestTextArea(t *testing.T) {
 			},
 			expectedContent: "aaa\nbbb",
 			expectedCursor:  4,
+		},
+		{
+			actions: func(textarea *TextArea) {
+				textarea.TypeString("aaa bbb")
+				textarea.GoToStartOfLine()
+				textarea.MoveCursorLeft()
+				textarea.MoveRightWord()
+			},
+			wrapWidth:       4,
+			expectedContent: "aaa bbb",
+			expectedCursor:  7,
 		},
 		{
 			actions: func(textarea *TextArea) {
@@ -683,8 +713,12 @@ func TestTextArea(t *testing.T) {
 	for i, test := range tests {
 		t.Run(strconv.Itoa(i+1), func(t *testing.T) {
 			textarea := &TextArea{}
+			if test.wrapWidth > 0 {
+				textarea.AutoWrap = true
+				textarea.AutoWrapWidth = test.wrapWidth
+			}
 			test.actions(textarea)
-			assert.EqualValues(t, test.expectedContent, textarea.GetContent())
+			assert.EqualValues(t, test.expectedContent, textarea.GetUnwrappedContent())
 			assert.EqualValues(t, test.expectedCursor, textarea.cursor)
 			assert.EqualValues(t, test.expectedClipboard, textarea.clipboard)
 		})
@@ -694,6 +728,7 @@ func TestTextArea(t *testing.T) {
 func TestGetCursorXY(t *testing.T) {
 	tests := []struct {
 		actions   func(*TextArea)
+		wrapWidth int
 		expectedX int
 		expectedY int
 	}{
@@ -706,10 +741,55 @@ func TestGetCursorXY(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
+				textarea.TypeString("\n")
+			},
+			expectedX: 0,
+			expectedY: 1,
+		},
+		{
+			actions: func(textarea *TextArea) {
+				textarea.TypeString("\na")
+			},
+			expectedX: 1,
+			expectedY: 1,
+		},
+		{
+			actions: func(textarea *TextArea) {
+				textarea.TypeString("\n")
+				textarea.MoveCursorUp()
+			},
+			expectedX: 0,
+			expectedY: 0,
+		},
+		{
+			actions: func(textarea *TextArea) {
+				textarea.TypeString("\n\n")
+				textarea.MoveCursorUp()
+			},
+			expectedX: 0,
+			expectedY: 1,
+		},
+		{
+			actions: func(textarea *TextArea) {
 				textarea.TypeString("ab\ncd")
 			},
 			expectedX: 2,
 			expectedY: 1,
+		},
+		{
+			actions: func(textarea *TextArea) {
+				textarea.TypeString("ab\n")
+			},
+			expectedX: 0,
+			expectedY: 1,
+		},
+		{
+			actions: func(textarea *TextArea) {
+				textarea.TypeString("ab\n")
+				textarea.MoveCursorLeft()
+			},
+			expectedX: 2,
+			expectedY: 0,
 		},
 		{
 			actions: func(textarea *TextArea) {
@@ -720,10 +800,48 @@ func TestGetCursorXY(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
+				textarea.TypeString("ab\n\n")
+				textarea.MoveCursorLeft()
+			},
+			expectedX: 0,
+			expectedY: 1,
+		},
+		{
+			actions: func(textarea *TextArea) {
 				textarea.TypeRune('漢')
 				textarea.TypeRune('字')
 			},
 			expectedX: 4,
+			expectedY: 0,
+		},
+		{
+			actions: func(textarea *TextArea) {
+				textarea.TypeString("abc de")
+				textarea.MoveCursorLeft()
+			},
+			wrapWidth: 4,
+			expectedX: 1,
+			expectedY: 1,
+		},
+		{
+			actions: func(textarea *TextArea) {
+				textarea.TypeString("abc de")
+				textarea.MoveCursorLeft()
+				textarea.MoveCursorLeft()
+			},
+			wrapWidth: 4,
+			expectedX: 0,
+			expectedY: 1,
+		},
+		{
+			actions: func(textarea *TextArea) {
+				textarea.TypeString("abc de")
+				textarea.MoveCursorLeft()
+				textarea.MoveCursorLeft()
+				textarea.MoveCursorLeft()
+			},
+			wrapWidth: 4,
+			expectedX: 3,
 			expectedY: 0,
 		},
 	}
@@ -731,6 +849,10 @@ func TestGetCursorXY(t *testing.T) {
 	for i, test := range tests {
 		t.Run(strconv.Itoa(i+1), func(t *testing.T) {
 			textarea := &TextArea{}
+			if test.wrapWidth > 0 {
+				textarea.AutoWrap = true
+				textarea.AutoWrapWidth = test.wrapWidth
+			}
 			test.actions(textarea)
 			x, y := textarea.GetCursorXY()
 			assert.EqualValues(t, test.expectedX, x)
