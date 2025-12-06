@@ -2,6 +2,7 @@ package gocui
 
 import (
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -679,12 +680,14 @@ func TestTextArea(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		textarea := &TextArea{}
-		test.actions(textarea)
-		assert.EqualValues(t, test.expectedContent, textarea.GetContent())
-		assert.EqualValues(t, test.expectedCursor, textarea.cursor)
-		assert.EqualValues(t, test.expectedClipboard, textarea.clipboard)
+	for i, test := range tests {
+		t.Run(strconv.Itoa(i+1), func(t *testing.T) {
+			textarea := &TextArea{}
+			test.actions(textarea)
+			assert.EqualValues(t, test.expectedContent, textarea.GetContent())
+			assert.EqualValues(t, test.expectedCursor, textarea.cursor)
+			assert.EqualValues(t, test.expectedClipboard, textarea.clipboard)
+		})
 	}
 }
 
@@ -725,12 +728,14 @@ func TestGetCursorXY(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		textarea := &TextArea{}
-		test.actions(textarea)
-		x, y := textarea.GetCursorXY()
-		assert.EqualValues(t, test.expectedX, x)
-		assert.EqualValues(t, test.expectedY, y)
+	for i, test := range tests {
+		t.Run(strconv.Itoa(i+1), func(t *testing.T) {
+			textarea := &TextArea{}
+			test.actions(textarea)
+			x, y := textarea.GetCursorXY()
+			assert.EqualValues(t, test.expectedX, x)
+			assert.EqualValues(t, test.expectedY, y)
+		})
 	}
 }
 
