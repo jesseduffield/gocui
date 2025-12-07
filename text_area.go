@@ -168,28 +168,34 @@ func (self *TextArea) MoveCursorRight() {
 	self.cursor++
 }
 
-func (self *TextArea) MoveLeftWord() {
+func (self *TextArea) newCursorForMoveLeftWord() int {
 	if self.cursor == 0 {
-		return
+		return 0
 	}
 	if self.atLineStart() {
-		self.cursor--
-		return
+		return self.cursor - 1
 	}
 
-	for !self.atLineStart() && strings.ContainsRune(WHITESPACES, self.content[self.cursor-1]) {
-		self.cursor--
+	cursor := self.cursor
+	for cursor > 0 && strings.ContainsRune(WHITESPACES, self.content[cursor-1]) {
+		cursor--
 	}
 	separators := false
-	for !self.atLineStart() && strings.ContainsRune(WORD_SEPARATORS, self.content[self.cursor-1]) {
-		self.cursor--
+	for cursor > 0 && strings.ContainsRune(WORD_SEPARATORS, self.content[cursor-1]) {
+		cursor--
 		separators = true
 	}
 	if !separators {
-		for !self.atLineStart() && !strings.ContainsRune(WHITESPACES+WORD_SEPARATORS, self.content[self.cursor-1]) {
-			self.cursor--
+		for cursor > 0 && self.content[cursor-1] != '\n' && !strings.ContainsRune(WHITESPACES+WORD_SEPARATORS, self.content[cursor-1]) {
+			cursor--
 		}
 	}
+
+	return cursor
+}
+
+func (self *TextArea) MoveLeftWord() {
+	self.cursor = self.newCursorForMoveLeftWord()
 }
 
 func (self *TextArea) MoveRightWord() {
@@ -383,31 +389,17 @@ func (self *TextArea) atSoftLineEnd() bool {
 }
 
 func (self *TextArea) BackSpaceWord() {
-	if self.cursor == 0 {
-		return
-	}
-	if self.atLineStart() {
-		self.BackSpaceChar()
+	newCursor := self.newCursorForMoveLeftWord()
+	if newCursor == self.cursor {
 		return
 	}
 
-	right := self.cursor
-	for !self.atLineStart() && strings.ContainsRune(WHITESPACES, self.content[self.cursor-1]) {
-		self.cursor--
+	clipboard := string(self.content[newCursor:self.cursor])
+	if clipboard != "\n" {
+		self.clipboard = clipboard
 	}
-	separators := false
-	for !self.atLineStart() && strings.ContainsRune(WORD_SEPARATORS, self.content[self.cursor-1]) {
-		self.cursor--
-		separators = true
-	}
-	if !separators {
-		for !self.atLineStart() && !strings.ContainsRune(WHITESPACES+WORD_SEPARATORS, self.content[self.cursor-1]) {
-			self.cursor--
-		}
-	}
-
-	self.clipboard = string(self.content[self.cursor:right])
-	self.content = append(self.content[:self.cursor], self.content[right:]...)
+	self.content = append(self.content[:newCursor], self.content[self.cursor:]...)
+	self.cursor = newCursor
 	self.autoWrapContent()
 }
 
