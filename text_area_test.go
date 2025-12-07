@@ -857,6 +857,11 @@ func TestGetCursorXY(t *testing.T) {
 			x, y := textarea.GetCursorXY()
 			assert.EqualValues(t, test.expectedX, x)
 			assert.EqualValues(t, test.expectedY, y)
+
+			// As a sanity check, test that setting the cursor back to (x, y) results in the same cursor position:
+			cursor := textarea.cursor
+			textarea.SetCursor2D(x, y)
+			assert.EqualValues(t, cursor, textarea.cursor)
 		})
 	}
 }
