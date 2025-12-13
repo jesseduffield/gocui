@@ -311,16 +311,6 @@ func (g *Gui) SetRune(x, y int, ch rune, fgColor, bgColor Attribute) error {
 	return nil
 }
 
-// Rune returns the rune contained in the cell at the given position.
-// It checks if the position is valid.
-func (g *Gui) Rune(x, y int) (rune, error) {
-	if x < 0 || y < 0 || x >= g.maxX || y >= g.maxY {
-		return ' ', errors.New("invalid point")
-	}
-	c, _, _, _ := Screen.GetContent(x, y)
-	return c, nil
-}
-
 // SetView creates a new view with its top-left corner at (x0, y0)
 // and the bottom-right one at (x1, y1). If a view with the same name
 // already exists, its dimensions are updated; otherwise, the error
