@@ -1696,11 +1696,11 @@ func (g *Gui) Snapshot() string {
 
 	for y := range height {
 		for x := 0; x < width; x++ {
-			char, _, _, charWidth := g.screen.GetContent(x, y)
+			char, _, charWidth := g.screen.Get(x, y)
 			if charWidth == 0 {
 				continue
 			}
-			builder.WriteRune(char)
+			builder.WriteString(char)
 			if charWidth > 1 {
 				x += charWidth - 1
 			}
