@@ -4,10 +4,6 @@
 
 package gocui
 
-import (
-	"unicode"
-)
-
 // Editor interface must be satisfied by gocui editors.
 type Editor interface {
 	Edit(v *View, key Key, ch rune, mod Modifier) bool
@@ -66,7 +62,7 @@ func SimpleEditor(v *View, key Key, ch rune, mod Modifier) bool {
 		v.TextArea.BackSpaceWord()
 	case key == KeyCtrlY:
 		v.TextArea.Yank()
-	case unicode.IsPrint(ch):
+	case ch != 0:
 		v.TextArea.TypeCharacter(string(ch))
 	default:
 		return false
