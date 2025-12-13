@@ -29,6 +29,9 @@ var DefaultEditor Editor = EditorFunc(SimpleEditor)
 // SimpleEditor is used as the default gocui editor.
 func SimpleEditor(v *View, key Key, ch rune, mod Modifier) bool {
 	switch {
+	case (key == KeyBackspace || key == KeyBackspace2) && (mod&ModAlt) != 0,
+		key == KeyCtrlW:
+		v.TextArea.BackSpaceWord()
 	case key == KeyBackspace || key == KeyBackspace2:
 		v.TextArea.BackSpaceChar()
 	case key == KeyCtrlD || key == KeyDelete:
@@ -37,11 +40,11 @@ func SimpleEditor(v *View, key Key, ch rune, mod Modifier) bool {
 		v.TextArea.MoveCursorDown()
 	case key == KeyArrowUp:
 		v.TextArea.MoveCursorUp()
-	case key == KeyArrowLeft && (mod&ModAlt) != 0:
+	case (key == KeyArrowLeft || ch == 'b') && (mod&ModAlt) != 0:
 		v.TextArea.MoveLeftWord()
 	case key == KeyArrowLeft:
 		v.TextArea.MoveCursorLeft()
-	case key == KeyArrowRight && (mod&ModAlt) != 0:
+	case (key == KeyArrowRight || ch == 'f') && (mod&ModAlt) != 0:
 		v.TextArea.MoveRightWord()
 	case key == KeyArrowRight:
 		v.TextArea.MoveCursorRight()
