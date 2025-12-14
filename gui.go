@@ -8,6 +8,7 @@ import (
 	"context"
 	standardErrors "errors"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -189,9 +190,9 @@ type Gui struct {
 
 	OnSearchEscape func() error
 	// these keys must either be of type Key of rune
-	SearchEscapeKey    interface{}
-	NextSearchMatchKey interface{}
-	PrevSearchMatchKey interface{}
+	SearchEscapeKey    any
+	NextSearchMatchKey any
+	PrevSearchMatchKey any
 
 	ErrorHandler func(error) error
 
@@ -554,7 +555,7 @@ func (g *Gui) CurrentView() *View {
 // It behaves differently on different platforms. Somewhere it doesn't register Alt key press,
 // on others it might report Ctrl as Alt. It's not consistent and therefore it's not recommended
 // to use with mouse keys.
-func (g *Gui) SetKeybinding(viewname string, key interface{}, mod Modifier, handler func(*Gui, *View) error) error {
+func (g *Gui) SetKeybinding(viewname string, key any, mod Modifier, handler func(*Gui, *View) error) error {
 	var kb *keybinding
 
 	k, ch, err := getKey(key)
@@ -572,7 +573,7 @@ func (g *Gui) SetKeybinding(viewname string, key interface{}, mod Modifier, hand
 }
 
 // DeleteKeybinding deletes a keybinding.
-func (g *Gui) DeleteKeybinding(viewname string, key interface{}, mod Modifier) error {
+func (g *Gui) DeleteKeybinding(viewname string, key any, mod Modifier) error {
 	k, ch, err := getKey(key)
 	if err != nil {
 		return err
@@ -623,10 +624,8 @@ func (g *Gui) SetViewClickBinding(binding *ViewMouseBinding) error {
 
 // BlackListKeybinding adds a keybinding to the blacklist
 func (g *Gui) BlacklistKeybinding(k Key) error {
-	for _, j := range g.blacklist {
-		if j == k {
-			return ErrAlreadyBlacklisted
-		}
+	if slices.Contains(g.blacklist, k) {
+		return ErrAlreadyBlacklisted
 	}
 	g.blacklist = append(g.blacklist, k)
 	return nil
@@ -653,7 +652,7 @@ func (g *Gui) SetOpenHyperlinkFunc(openHyperlinkFunc func(string, string) error)
 
 // getKey takes an empty interface with a key and returns the corresponding
 // typed Key or rune.
-func getKey(key interface{}) (Key, rune, error) {
+func getKey(key any) (Key, rune, error) {
 	switch t := key.(type) {
 	case nil: // Ignore keybinding if `nil`
 		return 0, 0, nil
@@ -1485,7 +1484,7 @@ func (g *Gui) execMouseKeybindings(view *View, ev *GocuiEvent, opts ViewMouseBin
 	return false, nil
 }
 
-func IsMouseKey(key interface{}) bool {
+func IsMouseKey(key any) bool {
 	switch key {
 	case
 		MouseLeft,
@@ -1502,7 +1501,7 @@ func IsMouseKey(key interface{}) bool {
 	}
 }
 
-func IsMouseScrollKey(key interface{}) bool {
+func IsMouseScrollKey(key any) bool {
 	switch key {
 	case
 		MouseWheelUp,
@@ -1640,12 +1639,7 @@ func (g *Gui) StartTicking(ctx context.Context) {
 
 // isBlacklisted reports whether the key is blacklisted
 func (g *Gui) isBlacklisted(k Key) bool {
-	for _, j := range g.blacklist {
-		if j == k {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(g.blacklist, k)
 }
 
 func (g *Gui) Suspend() error {
@@ -1699,7 +1693,7 @@ func (g *Gui) Snapshot() string {
 
 	builder := &strings.Builder{}
 
-	for y := 0; y < height; y++ {
+	for y := range height {
 		for x := 0; x < width; x++ {
 			char, _, _, charWidth := g.screen.GetContent(x, y)
 			if charWidth == 0 {

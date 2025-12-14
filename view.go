@@ -406,11 +406,11 @@ type lineType []cell
 
 // String returns a string from a given cell slice.
 func (l lineType) String() string {
-	str := ""
+	var str strings.Builder
 	for _, c := range l {
-		str += string(c.chr)
+		str.WriteString(string(c.chr))
 	}
-	return str
+	return str.String()
 }
 
 // NewView returns a new View object.
@@ -548,20 +548,6 @@ func (v *View) setRune(x, y int, ch rune, fgColor, bgColor Attribute) {
 	}
 
 	tcellSetCell(v.x0+x+1, v.y0+y+1, ch, fgColor, bgColor, v.outMode)
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }
 
 // SetCursor sets the cursor position of the view at the given point,
@@ -834,7 +820,7 @@ func (v *View) writeString(s string) {
 
 func findSubstring(line []cell, substringToFind []rune) int {
 	for i := 0; i < len(line)-len(substringToFind); i++ {
-		for j := 0; j < len(substringToFind); j++ {
+		for j := range substringToFind {
 			if line[i+j].chr != substringToFind[j] {
 				break
 			}
@@ -872,16 +858,16 @@ func (v *View) autoRenderHyperlinksInCurrentLine() {
 			break
 		}
 		linkStart += start
-		link := ""
+		var link strings.Builder
 		linkEnd := linkStart
 		for ; linkEnd < len(line); linkEnd++ {
 			if _, ok := lineEndCharacters[line[linkEnd].chr]; ok {
 				break
 			}
-			link += string(line[linkEnd].chr)
+			link.WriteString(string(line[linkEnd].chr))
 		}
 		for i := linkStart; i < linkEnd; i++ {
-			v.lines[v.wy][i].hyperlink = link
+			v.lines[v.wy][i].hyperlink = link.String()
 		}
 		start = linkEnd
 	}
@@ -1345,8 +1331,8 @@ func (v *View) realPosition(vx, vy int) (x, y int, ok bool) {
 // clearRunes erases all the cells in the view.
 func (v *View) clearRunes() {
 	maxX, maxY := v.InnerSize()
-	for x := 0; x < maxX; x++ {
-		for y := 0; y < maxY; y++ {
+	for x := range maxX {
+		for y := range maxY {
 			tcellSetCell(v.x0+x+1, v.y0+y+1, ' ', v.FgColor, v.BgColor, v.outMode)
 		}
 	}
@@ -1848,7 +1834,7 @@ func containsColoredTextInLine(fgColorStr string, text string, line []cell) bool
 	fgColor := tcell.GetColor(fgColorStr)
 
 	currentMatch := ""
-	for i := 0; i < len(line); i++ {
+	for i := range line {
 		cell := line[i]
 
 		// stripping attributes by converting to and from hex

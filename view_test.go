@@ -5,6 +5,7 @@
 package gocui
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -223,11 +224,11 @@ func stringToCells(s string) []cell {
 }
 
 func cellsToString(cells []cell) string {
-	var s string
+	var s strings.Builder
 	for _, c := range cells {
-		s += string(c.chr)
+		s.WriteString(string(c.chr))
 	}
-	return s
+	return s.String()
 }
 
 func TestLineWrap(t *testing.T) {
