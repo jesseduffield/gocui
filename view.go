@@ -1070,17 +1070,15 @@ func (v *View) updateSearchPositions() {
 			x := 0
 			for startIdx, c := range line {
 				found := true
-				offset := 0
-				for _, c := range normalizedSearchStr {
-					if len(line)-1 < startIdx+offset {
+				for i, c := range normalizedSearchStr {
+					if len(line)-1 < startIdx+i {
 						found = false
 						break
 					}
-					if normalizeRune(line[startIdx+offset].chr) != c {
+					if normalizeRune(line[startIdx+i].chr) != c {
 						found = false
 						break
 					}
-					offset += 1
 				}
 				if found {
 					result = append(result, SearchPosition{XStart: x, XEnd: x + searchStringWidth, Y: y})
