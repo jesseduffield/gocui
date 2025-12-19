@@ -17,7 +17,7 @@ type Key tcell.Key
 // in combination with Keys or Runes when a new keybinding is defined.
 type Modifier tcell.ModMask
 
-// Keybidings are used to link a given key-press event with a handler.
+// Keybindings are used to link a given key-press event with a handler.
 type keybinding struct {
 	viewName string
 	key      Key
