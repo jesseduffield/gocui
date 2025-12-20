@@ -6,16 +6,16 @@ package gocui
 
 // Editor interface must be satisfied by gocui editors.
 type Editor interface {
-	Edit(v *View, key Key, ch rune, mod Modifier) bool
+	Edit(v *View, key KeyName, ch rune, mod Modifier) bool
 }
 
 // The EditorFunc type is an adapter to allow the use of ordinary functions as
 // Editors. If f is a function with the appropriate signature, EditorFunc(f)
 // is an Editor object that calls f.
-type EditorFunc func(v *View, key Key, ch rune, mod Modifier) bool
+type EditorFunc func(v *View, key KeyName, ch rune, mod Modifier) bool
 
 // Edit calls f(v, key, ch, mod)
-func (f EditorFunc) Edit(v *View, key Key, ch rune, mod Modifier) bool {
+func (f EditorFunc) Edit(v *View, key KeyName, ch rune, mod Modifier) bool {
 	return f(v, key, ch, mod)
 }
 
@@ -23,7 +23,7 @@ func (f EditorFunc) Edit(v *View, key Key, ch rune, mod Modifier) bool {
 var DefaultEditor Editor = EditorFunc(SimpleEditor)
 
 // SimpleEditor is used as the default gocui editor.
-func SimpleEditor(v *View, key Key, ch rune, mod Modifier) bool {
+func SimpleEditor(v *View, key KeyName, ch rune, mod Modifier) bool {
 	switch {
 	case (key == KeyBackspace || key == KeyBackspace2) && (mod&ModAlt) != 0,
 		key == KeyCtrlW:

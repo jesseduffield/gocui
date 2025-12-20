@@ -92,14 +92,14 @@ type ViewMouseBinding struct {
 	Modifier Modifier
 
 	// must be a mouse key
-	Key Key
+	KeyName KeyName
 }
 
 type ViewMouseBindingOpts struct {
 	X int // i.e. origin x + cursor x
 	Y int // i.e. origin y + cursor y
 
-	Key Key // which button was clicked (will be one of the Mouse* constants)
+	KeyName KeyName // which button was clicked (will be one of the Mouse* constants)
 
 	IsDoubleClick bool // true if this is a double click
 }
@@ -126,7 +126,7 @@ type RecordingConfig struct {
 type clickInfo struct {
 	x        int
 	y        int
-	key      Key
+	key      KeyName
 	viewName string
 	time     time.Time
 }
@@ -153,7 +153,7 @@ type Gui struct {
 	maxX, maxY        int
 	outputMode        OutputMode
 	stop              chan struct{}
-	blacklist         []Key
+	blacklist         []KeyName
 
 	// BgColor and FgColor allow to configure the background and foreground
 	// colors of the GUI.
@@ -571,7 +571,7 @@ func (g *Gui) DeleteKeybinding(viewname string, key any, mod Modifier) error {
 	}
 
 	for i, kb := range g.keybindings {
-		if kb.viewName == viewname && kb.ch == ch && kb.key == k && kb.mod == mod {
+		if kb.viewName == viewname && kb.ch == ch && kb.keyName == k && kb.mod == mod {
 			g.keybindings = append(g.keybindings[:i], g.keybindings[i+1:]...)
 			return nil
 		}
@@ -614,7 +614,7 @@ func (g *Gui) SetViewClickBinding(binding *ViewMouseBinding) error {
 }
 
 // BlackListKeybinding adds a keybinding to the blacklist
-func (g *Gui) BlacklistKeybinding(k Key) error {
+func (g *Gui) BlacklistKeybinding(k KeyName) error {
 	if slices.Contains(g.blacklist, k) {
 		return ErrAlreadyBlacklisted
 	}
@@ -623,7 +623,7 @@ func (g *Gui) BlacklistKeybinding(k Key) error {
 }
 
 // WhiteListKeybinding removes a keybinding from the blacklist
-func (g *Gui) WhitelistKeybinding(k Key) error {
+func (g *Gui) WhitelistKeybinding(k KeyName) error {
 	for i, j := range g.blacklist {
 		if j == k {
 			g.blacklist = append(g.blacklist[:i], g.blacklist[i+1:]...)
@@ -643,11 +643,11 @@ func (g *Gui) SetOpenHyperlinkFunc(openHyperlinkFunc func(string, string) error)
 
 // getKey takes an empty interface with a key and returns the corresponding
 // typed Key or rune.
-func getKey(key any) (Key, rune, error) {
+func getKey(key any) (KeyName, rune, error) {
 	switch t := key.(type) {
 	case nil: // Ignore keybinding if `nil`
 		return 0, 0, nil
-	case Key:
+	case KeyName:
 		return t, 0, nil
 	case rune:
 		return 0, t, nil
@@ -1391,7 +1391,7 @@ func (g *Gui) onKey(ev *GocuiEvent) error {
 
 		if IsMouseKey(ev.Key) {
 			isDoubleClick := g.recordClickInfo(newX, newY, ev.Key, v)
-			opts := ViewMouseBindingOpts{X: newX, Y: newY, Key: ev.Key, IsDoubleClick: isDoubleClick}
+			opts := ViewMouseBindingOpts{X: newX, Y: newY, KeyName: ev.Key, IsDoubleClick: isDoubleClick}
 			matched, err := g.execMouseKeybindings(v, ev, opts)
 			if err != nil {
 				return err
@@ -1425,7 +1425,7 @@ func (g *Gui) onKey(ev *GocuiEvent) error {
 }
 
 // remember the information for this click, and return true if it was a double click
-func (g *Gui) recordClickInfo(x, y int, key Key, v *View) bool {
+func (g *Gui) recordClickInfo(x, y int, key KeyName, v *View) bool {
 	if IsMouseScrollKey(key) {
 		g.lastClick = nil
 		return false
@@ -1453,7 +1453,7 @@ func (g *Gui) recordClickInfo(x, y int, key Key, v *View) bool {
 func (g *Gui) execMouseKeybindings(view *View, ev *GocuiEvent, opts ViewMouseBindingOpts) (bool, error) {
 	isMatch := func(binding *ViewMouseBinding) bool {
 		return binding.ViewName == view.Name() &&
-			ev.Key == binding.Key &&
+			ev.Key == binding.KeyName &&
 			ev.Mod == binding.Modifier
 	}
 
@@ -1492,7 +1492,7 @@ func IsMouseKey(key any) bool {
 	}
 }
 
-func IsMouseScrollKey(key any) bool {
+func IsMouseScrollKey(key KeyName) bool {
 	switch key {
 	case
 		MouseWheelUp,
@@ -1553,7 +1553,7 @@ func (g *Gui) execKeybindings(v *View, ev *GocuiEvent) error {
 		if v != nil && g.matchView(v.ParentView, kb) {
 			matchingParentViewKb = kb
 		}
-		if globalKb == nil && kb.viewName == "" && ((v != nil && !v.Editable) || (kb.ch == 0 && kb.key != KeyCtrlU && kb.key != KeyCtrlA && kb.key != KeyCtrlE)) {
+		if globalKb == nil && kb.viewName == "" && ((v != nil && !v.Editable) || (kb.ch == 0 && kb.keyName != KeyCtrlU && kb.keyName != KeyCtrlA && kb.keyName != KeyCtrlE)) {
 			globalKb = kb
 		}
 	}
@@ -1579,7 +1579,7 @@ func (g *Gui) execKeybindings(v *View, ev *GocuiEvent) error {
 
 // execKeybinding executes a given keybinding
 func (g *Gui) execKeybinding(v *View, kb *keybinding) error {
-	if g.isBlacklisted(kb.key) {
+	if g.isBlacklisted(kb.keyName) {
 		return nil
 	}
 
@@ -1629,7 +1629,7 @@ func (g *Gui) StartTicking(ctx context.Context) {
 }
 
 // isBlacklisted reports whether the key is blacklisted
-func (g *Gui) isBlacklisted(k Key) bool {
+func (g *Gui) isBlacklisted(k KeyName) bool {
 	return slices.Contains(g.blacklist, k)
 }
 
