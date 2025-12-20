@@ -5,7 +5,8 @@
 package gocui
 
 import (
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
+	"github.com/gdamore/tcell/v3/vt"
 )
 
 // We probably don't want this being a global variable for YOLO for now
@@ -80,18 +81,19 @@ func registerRuneFallbacks(s tcell.Screen, additional map[rune]string) {
 
 // tcellInitSimulation initializes tcell screen for use.
 func (g *Gui) tcellInitSimulation(width int, height int) error {
-	s := tcell.NewSimulationScreen("")
-	if e := s.Init(); e != nil {
-		return e
-	} else {
-		g.screen = s
-		Screen = s
-		// setting to a larger value than the typical terminal size
-		// so that during a test we're more likely to see an item to select in a view.
-		s.SetSize(width, height)
-		s.Sync()
-		return nil
+	mt := vt.NewMockTerm(vt.MockOptSize{X: vt.Col(width), Y: vt.Row(height)})
+	s, err := tcell.NewTerminfoScreenFromTty(mt)
+	if err != nil {
+		return err
 	}
+	if err = s.Init(); err != nil {
+		return err
+	}
+
+	g.screen = s
+	Screen = s
+	s.Sync()
+	return nil
 }
 
 // tcellSetCell sets the character cell at a given location to the given
@@ -203,7 +205,7 @@ type TcellKeyEventWrapper struct {
 	Timestamp int64
 	Mod       tcell.ModMask
 	Key       tcell.Key
-	Ch        rune
+	Ch        string
 }
 
 func NewTcellKeyEventWrapper(event *tcell.EventKey, timestamp int64) *TcellKeyEventWrapper {
@@ -211,7 +213,7 @@ func NewTcellKeyEventWrapper(event *tcell.EventKey, timestamp int64) *TcellKeyEv
 		Timestamp: timestamp,
 		Mod:       event.Modifiers(),
 		Key:       event.Key(),
-		Ch:        event.Rune(),
+		Ch:        event.Str(),
 	}
 }
 
@@ -275,7 +277,7 @@ func (g *Gui) pollEvent() GocuiEvent {
 			tev = (ev).toTcellEvent()
 		}
 	} else {
-		tev = Screen.PollEvent()
+		tev = <-Screen.EventQ()
 	}
 
 	switch tev := tev.(type) {
@@ -286,28 +288,27 @@ func (g *Gui) pollEvent() GocuiEvent {
 		return GocuiEvent{Type: eventResize, Width: w, Height: h}
 	case *tcell.EventKey:
 		k := tev.Key()
-		ch := rune(0)
+		ch := ""
 		if k == tcell.KeyRune {
-			ch = tev.Rune()
-			if ch == ' ' {
+			ch = tev.Str()
+			if ch == " " {
 				// special handling for spacebar
 				k = tcell.Key(KeySpace)
-				ch = rune(0)
+				ch = ""
 			}
 		}
 		mod := tev.Modifiers()
 		// remove control modifier and setup special handling of ctrl+spacebar, etc.
 		if mod == tcell.ModCtrl && k == 32 {
-			mod = 0
-			ch = rune(0)
-			k = tcell.KeyCtrlSpace
+			ch = " "
+			k = tcell.KeyRune
 		} else if mod == tcell.ModShift && k == tcell.KeyUp {
 			mod = 0
-			ch = rune(0)
+			ch = ""
 			k = tcell.KeyF62
 		} else if mod == tcell.ModShift && k == tcell.KeyDown {
 			mod = 0
-			ch = rune(0)
+			ch = ""
 			k = tcell.KeyF63
 		} else if mod == tcell.ModCtrl || mod == tcell.ModShift {
 			// remove Ctrl or Shift if specified

@@ -62,8 +62,8 @@ func SimpleEditor(v *View, key Key, mod Modifier) bool {
 		v.TextArea.BackSpaceWord()
 	case key.KeyName() == KeyCtrlY:
 		v.TextArea.Yank()
-	case key.Ch() != 0:
-		v.TextArea.TypeCharacter(string(key.Ch()))
+	case key.Str() != "":
+		v.TextArea.TypeCharacter(key.Str())
 	default:
 		return false
 	}

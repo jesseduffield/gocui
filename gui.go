@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 	"github.com/go-errors/errors"
 	"github.com/rivo/uniseg"
 )
@@ -563,7 +563,7 @@ func (g *Gui) SetKeybinding(viewname string, key Key, mod Modifier, handler func
 // DeleteKeybinding deletes a keybinding.
 func (g *Gui) DeleteKeybinding(viewname string, key Key, mod Modifier) error {
 	for i, kb := range g.keybindings {
-		if kb.viewName == viewname && kb.key.keyName == key.KeyName() && kb.key.ch == key.ch && kb.mod == mod {
+		if kb.viewName == viewname && kb.key.keyName == key.KeyName() && kb.key.str == key.str && kb.mod == mod {
 			g.keybindings = append(g.keybindings[:i], g.keybindings[i+1:]...)
 			return nil
 		}
@@ -1631,7 +1631,7 @@ func (g *Gui) matchView(v *View, kb *keybinding) bool {
 	if v == nil {
 		return false
 	}
-	if v.Editable && kb.key.ch != 0 {
+	if v.Editable && kb.key.Str() != "" {
 		return false
 	}
 	if kb.viewName != v.name {

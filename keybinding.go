@@ -5,7 +5,7 @@
 package gocui
 
 import (
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 )
 
 // KeyName represents special keys or keys combinations.
@@ -69,67 +69,55 @@ const (
 
 // Keys combinations.
 const (
-	KeyCtrlTilde      = KeyName(tcell.KeyF64) // arbitrary assignment
-	KeyCtrlSpace      = KeyName(tcell.KeyCtrlSpace)
-	KeyCtrlA          = KeyName(tcell.KeyCtrlA)
-	KeyCtrlB          = KeyName(tcell.KeyCtrlB)
-	KeyCtrlC          = KeyName(tcell.KeyCtrlC)
-	KeyCtrlD          = KeyName(tcell.KeyCtrlD)
-	KeyCtrlE          = KeyName(tcell.KeyCtrlE)
-	KeyCtrlF          = KeyName(tcell.KeyCtrlF)
-	KeyCtrlG          = KeyName(tcell.KeyCtrlG)
-	KeyBackspace      = KeyName(tcell.KeyBackspace)
-	KeyCtrlH          = KeyName(tcell.KeyCtrlH)
-	KeyTab            = KeyName(tcell.KeyTab)
-	KeyBacktab        = KeyName(tcell.KeyBacktab)
-	KeyCtrlI          = KeyName(tcell.KeyCtrlI)
-	KeyCtrlJ          = KeyName(tcell.KeyCtrlJ)
-	KeyCtrlK          = KeyName(tcell.KeyCtrlK)
-	KeyCtrlL          = KeyName(tcell.KeyCtrlL)
-	KeyEnter          = KeyName(tcell.KeyEnter)
-	KeyCtrlM          = KeyName(tcell.KeyCtrlM)
-	KeyCtrlN          = KeyName(tcell.KeyCtrlN)
-	KeyCtrlO          = KeyName(tcell.KeyCtrlO)
-	KeyCtrlP          = KeyName(tcell.KeyCtrlP)
-	KeyCtrlQ          = KeyName(tcell.KeyCtrlQ)
-	KeyCtrlR          = KeyName(tcell.KeyCtrlR)
-	KeyCtrlS          = KeyName(tcell.KeyCtrlS)
-	KeyCtrlT          = KeyName(tcell.KeyCtrlT)
-	KeyCtrlU          = KeyName(tcell.KeyCtrlU)
-	KeyCtrlV          = KeyName(tcell.KeyCtrlV)
-	KeyCtrlW          = KeyName(tcell.KeyCtrlW)
-	KeyCtrlX          = KeyName(tcell.KeyCtrlX)
-	KeyCtrlY          = KeyName(tcell.KeyCtrlY)
-	KeyCtrlZ          = KeyName(tcell.KeyCtrlZ)
-	KeyEsc            = KeyName(tcell.KeyEscape)
-	KeyCtrlUnderscore = KeyName(tcell.KeyCtrlUnderscore)
-	KeySpace          = KeyName(32)
-	KeyBackspace2     = KeyName(tcell.KeyBackspace2)
-	KeyCtrl8          = KeyName(tcell.KeyBackspace2) // same key as in termbox-go
+	KeyCtrlTilde  = KeyName(tcell.KeyF64) // arbitrary assignment
+	KeyCtrlA      = KeyName(tcell.KeyCtrlA)
+	KeyCtrlB      = KeyName(tcell.KeyCtrlB)
+	KeyCtrlC      = KeyName(tcell.KeyCtrlC)
+	KeyCtrlD      = KeyName(tcell.KeyCtrlD)
+	KeyCtrlE      = KeyName(tcell.KeyCtrlE)
+	KeyCtrlF      = KeyName(tcell.KeyCtrlF)
+	KeyCtrlG      = KeyName(tcell.KeyCtrlG)
+	KeyBackspace  = KeyName(tcell.KeyBackspace)
+	KeyCtrlH      = KeyName(tcell.KeyCtrlH)
+	KeyTab        = KeyName(tcell.KeyTab)
+	KeyBacktab    = KeyName(tcell.KeyBacktab)
+	KeyCtrlI      = KeyName(tcell.KeyCtrlI)
+	KeyCtrlJ      = KeyName(tcell.KeyCtrlJ)
+	KeyCtrlK      = KeyName(tcell.KeyCtrlK)
+	KeyCtrlL      = KeyName(tcell.KeyCtrlL)
+	KeyEnter      = KeyName(tcell.KeyEnter)
+	KeyCtrlM      = KeyName(tcell.KeyCtrlM)
+	KeyCtrlN      = KeyName(tcell.KeyCtrlN)
+	KeyCtrlO      = KeyName(tcell.KeyCtrlO)
+	KeyCtrlP      = KeyName(tcell.KeyCtrlP)
+	KeyCtrlQ      = KeyName(tcell.KeyCtrlQ)
+	KeyCtrlR      = KeyName(tcell.KeyCtrlR)
+	KeyCtrlS      = KeyName(tcell.KeyCtrlS)
+	KeyCtrlT      = KeyName(tcell.KeyCtrlT)
+	KeyCtrlU      = KeyName(tcell.KeyCtrlU)
+	KeyCtrlV      = KeyName(tcell.KeyCtrlV)
+	KeyCtrlW      = KeyName(tcell.KeyCtrlW)
+	KeyCtrlX      = KeyName(tcell.KeyCtrlX)
+	KeyCtrlY      = KeyName(tcell.KeyCtrlY)
+	KeyCtrlZ      = KeyName(tcell.KeyCtrlZ)
+	KeyEsc        = KeyName(tcell.KeyEscape)
+	KeySpace      = KeyName(32)
+	KeyBackspace2 = KeyName(tcell.KeyBackspace2)
+	KeyCtrl8      = KeyName(tcell.KeyBackspace2) // same key as in termbox-go
 
 	// The following assignments were used in termbox implementation.
 	// In tcell, these are not keys per se. But in gocui we have them
 	// mapped to the keys so we have to use placeholder keys.
 
-	KeyAltEnter       = KeyName(tcell.KeyF64) // arbitrary assignments
-	MouseLeft         = KeyName(tcell.KeyF63)
-	MouseRight        = KeyName(tcell.KeyF62)
-	MouseMiddle       = KeyName(tcell.KeyF61)
-	MouseRelease      = KeyName(tcell.KeyF60)
-	MouseWheelUp      = KeyName(tcell.KeyF59)
-	MouseWheelDown    = KeyName(tcell.KeyF58)
-	MouseWheelLeft    = KeyName(tcell.KeyF57)
-	MouseWheelRight   = KeyName(tcell.KeyF56)
-	KeyCtrl2          = KeyName(tcell.KeyNUL) // termbox defines theses
-	KeyCtrl3          = KeyName(tcell.KeyEscape)
-	KeyCtrl4          = KeyName(tcell.KeyCtrlBackslash)
-	KeyCtrl5          = KeyName(tcell.KeyCtrlRightSq)
-	KeyCtrl6          = KeyName(tcell.KeyCtrlCarat)
-	KeyCtrl7          = KeyName(tcell.KeyCtrlUnderscore)
-	KeyCtrlSlash      = KeyName(tcell.KeyCtrlUnderscore)
-	KeyCtrlRsqBracket = KeyName(tcell.KeyCtrlRightSq)
-	KeyCtrlBackslash  = KeyName(tcell.KeyCtrlBackslash)
-	KeyCtrlLsqBracket = KeyName(tcell.KeyCtrlLeftSq)
+	KeyAltEnter     = KeyName(tcell.KeyF64) // arbitrary assignments
+	MouseLeft       = KeyName(tcell.KeyF63)
+	MouseRight      = KeyName(tcell.KeyF62)
+	MouseMiddle     = KeyName(tcell.KeyF61)
+	MouseRelease    = KeyName(tcell.KeyF60)
+	MouseWheelUp    = KeyName(tcell.KeyF59)
+	MouseWheelDown  = KeyName(tcell.KeyF58)
+	MouseWheelLeft  = KeyName(tcell.KeyF57)
+	MouseWheelRight = KeyName(tcell.KeyF56)
 )
 
 // Modifiers.

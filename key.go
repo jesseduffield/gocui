@@ -4,31 +4,31 @@
 
 package gocui
 
-import "github.com/gdamore/tcell/v2"
+import "github.com/gdamore/tcell/v3"
 
 type Key struct {
 	keyName KeyName
-	ch      rune
+	str     string
 }
 
-func NewKey(keyName KeyName, ch rune) Key {
+func NewKey(keyName KeyName, str string) Key {
 	return Key{
 		keyName: keyName,
-		ch:      ch,
+		str:     str,
 	}
 }
 
 func NewKeyName(keyName KeyName) Key {
 	return Key{
 		keyName: keyName,
-		ch:      0,
+		str:     "",
 	}
 }
 
 func NewKeyRune(ch rune) Key {
 	return Key{
 		keyName: KeyName(tcell.KeyRune),
-		ch:      ch,
+		str:     string(ch),
 	}
 }
 
@@ -36,8 +36,8 @@ func (k Key) KeyName() KeyName {
 	return k.keyName
 }
 
-func (k Key) Ch() rune {
-	return k.ch
+func (k Key) Str() string {
+	return k.str
 }
 
 func (k Key) IsSet() bool {
@@ -45,5 +45,5 @@ func (k Key) IsSet() bool {
 }
 
 func (k Key) Equals(otherKey Key) bool {
-	return k.keyName == otherKey.keyName && k.ch == otherKey.ch
+	return k.keyName == otherKey.keyName && k.str == otherKey.str
 }
