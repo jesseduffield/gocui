@@ -188,11 +188,10 @@ type Gui struct {
 
 	Mutexes GuiMutexes
 
-	OnSearchEscape func() error
-	// these keys must either be of type Key of rune
-	SearchEscapeKey    any
-	NextSearchMatchKey any
-	PrevSearchMatchKey any
+	OnSearchEscape     func() error
+	SearchEscapeKey    Key
+	NextSearchMatchKey Key
+	PrevSearchMatchKey Key
 
 	ErrorHandler func(error) error
 
@@ -266,9 +265,9 @@ func NewGui(opts NewGuiOpts) (*Gui, error) {
 	g.SupportOverlaps = opts.SupportOverlaps
 
 	// default keys for when searching strings in a view
-	g.SearchEscapeKey = KeyEsc
-	g.NextSearchMatchKey = 'n'
-	g.PrevSearchMatchKey = 'N'
+	g.SearchEscapeKey = Key{KeyEsc, 0}
+	g.NextSearchMatchKey = KeyWithRune('n')
+	g.PrevSearchMatchKey = KeyWithRune('N')
 
 	g.playRecording = opts.PlayRecording
 
@@ -546,32 +545,22 @@ func (g *Gui) CurrentView() *View {
 // It behaves differently on different platforms. Somewhere it doesn't register Alt key press,
 // on others it might report Ctrl as Alt. It's not consistent and therefore it's not recommended
 // to use with mouse keys.
-func (g *Gui) SetKeybinding(viewname string, key any, mod Modifier, handler func(*Gui, *View) error) error {
+func (g *Gui) SetKeybinding(viewname string, key Key, mod Modifier, handler func(*Gui, *View) error) error {
 	var kb *keybinding
 
-	k, ch, err := getKey(key)
-	if err != nil {
-		return err
-	}
-
-	if g.isBlacklisted(k) {
+	if g.isBlacklisted(key.KeyName()) {
 		return ErrBlacklisted
 	}
 
-	kb = newKeybinding(viewname, k, ch, mod, handler)
+	kb = newKeybinding(viewname, key, mod, handler)
 	g.keybindings = append(g.keybindings, kb)
 	return nil
 }
 
 // DeleteKeybinding deletes a keybinding.
-func (g *Gui) DeleteKeybinding(viewname string, key any, mod Modifier) error {
-	k, ch, err := getKey(key)
-	if err != nil {
-		return err
-	}
-
+func (g *Gui) DeleteKeybinding(viewname string, key Key, mod Modifier) error {
 	for i, kb := range g.keybindings {
-		if kb.viewName == viewname && kb.ch == ch && kb.keyName == k && kb.mod == mod {
+		if kb.viewName == viewname && kb.key == key && kb.mod == mod {
 			g.keybindings = append(g.keybindings[:i], g.keybindings[i+1:]...)
 			return nil
 		}
@@ -639,21 +628,6 @@ func (g *Gui) SetFocusHandler(handler func(bool) error) {
 
 func (g *Gui) SetOpenHyperlinkFunc(openHyperlinkFunc func(string, string) error) {
 	g.openHyperlink = openHyperlinkFunc
-}
-
-// getKey takes an empty interface with a key and returns the corresponding
-// typed Key or rune.
-func getKey(key any) (KeyName, rune, error) {
-	switch t := key.(type) {
-	case nil: // Ignore keybinding if `nil`
-		return 0, 0, nil
-	case KeyName:
-		return t, 0, nil
-	case rune:
-		return 0, t, nil
-	default:
-		return 0, 0, errors.New("unknown type")
-	}
 }
 
 // userEvent represents an event triggered by the user.
@@ -1533,12 +1507,13 @@ func (g *Gui) execKeybindings(v *View, ev *GocuiEvent) error {
 	}
 
 	var err error
+	key := Key{keyName: ev.Key, ch: ev.Ch}
 
 	for _, kb := range g.keybindings {
 		if kb.handler == nil {
 			continue
 		}
-		if !kb.matchKeypress(ev.Key, ev.Ch, ev.Mod) {
+		if !kb.matchKeypress(key, ev.Mod) {
 			continue
 		}
 		if g.matchView(v, kb) {
@@ -1553,7 +1528,7 @@ func (g *Gui) execKeybindings(v *View, ev *GocuiEvent) error {
 		if v != nil && g.matchView(v.ParentView, kb) {
 			matchingParentViewKb = kb
 		}
-		if globalKb == nil && kb.viewName == "" && ((v != nil && !v.Editable) || (kb.ch == 0 && kb.keyName != KeyCtrlU && kb.keyName != KeyCtrlA && kb.keyName != KeyCtrlE)) {
+		if globalKb == nil && kb.viewName == "" && ((v != nil && !v.Editable) || (kb.key.Ch() == 0 && kb.key.KeyName() != KeyCtrlU && kb.key.KeyName() != KeyCtrlA && kb.key.KeyName() != KeyCtrlE)) {
 			globalKb = kb
 		}
 	}
@@ -1565,7 +1540,7 @@ func (g *Gui) execKeybindings(v *View, ev *GocuiEvent) error {
 	}
 
 	if g.currentView != nil && g.currentView.Editable && g.currentView.Editor != nil {
-		matched := g.currentView.Editor.Edit(g.currentView, ev.Key, ev.Ch, ev.Mod)
+		matched := g.currentView.Editor.Edit(g.currentView, key, ev.Mod)
 		if matched {
 			return nil
 		}
@@ -1579,7 +1554,7 @@ func (g *Gui) execKeybindings(v *View, ev *GocuiEvent) error {
 
 // execKeybinding executes a given keybinding
 func (g *Gui) execKeybinding(v *View, kb *keybinding) error {
-	if g.isBlacklisted(kb.keyName) {
+	if g.isBlacklisted(kb.key.KeyName()) {
 		return nil
 	}
 
@@ -1665,7 +1640,7 @@ func (g *Gui) matchView(v *View, kb *keybinding) bool {
 	if v == nil {
 		return false
 	}
-	if v.Editable && kb.ch != 0 {
+	if v.Editable && kb.key.Ch() != 0 {
 		return false
 	}
 	if kb.viewName != v.name {

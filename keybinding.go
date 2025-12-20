@@ -20,21 +20,17 @@ type Modifier tcell.ModMask
 // Keybindings are used to link a given key-press event with a handler.
 type keybinding struct {
 	viewName string
-	keyName  KeyName
-	ch       rune
+	key      Key
 	mod      Modifier
 	handler  func(*Gui, *View) error
 }
 
 // Parse takes the input string and extracts the keybinding.
 // Returns a Key / rune, a Modifier and an error.
-func Parse(input string) (any, Modifier, error) {
+func Parse(input string) (Key, Modifier, error) {
 	if len(input) == 1 {
-		_, r, err := getKey(rune(input[0]))
-		if err != nil {
-			return nil, ModNone, err
-		}
-		return r, ModNone, nil
+		r := rune(input[0])
+		return Key{KeyName(tcell.KeyRune), r}, ModNone, nil
 	}
 
 	var modifier Modifier
@@ -52,10 +48,10 @@ func Parse(input string) (any, Modifier, error) {
 
 	key, exist := translate[strings.Join(cleaned, "")]
 	if !exist {
-		return nil, ModNone, ErrNoSuchKeybind
+		return Key{0, 0}, ModNone, ErrNoSuchKeybind
 	}
 
-	return key, modifier, nil
+	return KeyWithName(key), modifier, nil
 }
 
 // ParseAll takes an array of strings and returns a map of all keybindings.
@@ -92,34 +88,28 @@ func MustParseAll(input []string) map[any]Modifier {
 }
 
 // newKeybinding returns a new Keybinding object.
-func newKeybinding(viewname string, key KeyName, ch rune, mod Modifier, handler func(*Gui, *View) error) (kb *keybinding) {
+func newKeybinding(viewname string, key Key, mod Modifier, handler func(*Gui, *View) error) (kb *keybinding) {
 	kb = &keybinding{
 		viewName: viewname,
-		keyName:  key,
-		ch:       ch,
+		key:      key,
 		mod:      mod,
 		handler:  handler,
 	}
 	return kb
 }
 
-func eventMatchesKey(ev *GocuiEvent, key any) bool {
+func eventMatchesKey(ev *GocuiEvent, key Key) bool {
 	// assuming ModNone for now
 	if ev.Mod != ModNone {
 		return false
 	}
 
-	k, ch, err := getKey(key)
-	if err != nil {
-		return false
-	}
-
-	return k == ev.Key && ch == ev.Ch
+	return key.KeyName() == ev.Key && key.Ch() == ev.Ch
 }
 
 // matchKeypress returns if the keybinding matches the keypress.
-func (kb *keybinding) matchKeypress(key KeyName, ch rune, mod Modifier) bool {
-	return kb.keyName == key && kb.ch == ch && kb.mod == mod
+func (kb *keybinding) matchKeypress(key Key, mod Modifier) bool {
+	return kb.key == key && kb.mod == mod
 }
 
 // translations for strings to keys
