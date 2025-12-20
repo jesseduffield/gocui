@@ -5,7 +5,7 @@
 package gocui
 
 import (
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 )
 
 // We probably don't want this being a global variable for YOLO for now
@@ -160,7 +160,7 @@ type GocuiEvent struct {
 	Type    gocuiEventType
 	Mod     Modifier
 	Key     KeyName
-	Ch      rune
+	Ch      string
 	Width   int
 	Height  int
 	Err     error
@@ -204,7 +204,7 @@ type TcellKeyEventWrapper struct {
 	Timestamp int64
 	Mod       tcell.ModMask
 	Key       tcell.Key
-	Ch        rune
+	Ch        string
 }
 
 func NewTcellKeyEventWrapper(event *tcell.EventKey, timestamp int64) *TcellKeyEventWrapper {
@@ -212,7 +212,7 @@ func NewTcellKeyEventWrapper(event *tcell.EventKey, timestamp int64) *TcellKeyEv
 		Timestamp: timestamp,
 		Mod:       event.Modifiers(),
 		Key:       event.Key(),
-		Ch:        event.Rune(),
+		Ch:        event.Str(),
 	}
 }
 
@@ -276,7 +276,7 @@ func (g *Gui) pollEvent() GocuiEvent {
 			tev = (ev).toTcellEvent()
 		}
 	} else {
-		tev = Screen.PollEvent()
+		tev = <-Screen.EventQ()
 	}
 
 	switch tev := tev.(type) {
@@ -287,28 +287,27 @@ func (g *Gui) pollEvent() GocuiEvent {
 		return GocuiEvent{Type: eventResize, Width: w, Height: h}
 	case *tcell.EventKey:
 		k := tev.Key()
-		ch := rune(0)
+		ch := ""
 		if k == tcell.KeyRune {
-			ch = tev.Rune()
-			if ch == ' ' {
+			ch = tev.Str()
+			if ch == " " {
 				// special handling for spacebar
 				k = tcell.Key(KeySpace)
-				ch = rune(0)
+				ch = ""
 			}
 		}
 		mod := tev.Modifiers()
 		// remove control modifier and setup special handling of ctrl+spacebar, etc.
 		if mod == tcell.ModCtrl && k == 32 {
-			mod = 0
-			ch = rune(0)
-			k = tcell.KeyCtrlSpace
+			ch = " "
+			k = tcell.KeyRune
 		} else if mod == tcell.ModShift && k == tcell.KeyUp {
 			mod = 0
-			ch = rune(0)
+			ch = ""
 			k = tcell.KeyF62
 		} else if mod == tcell.ModShift && k == tcell.KeyDown {
 			mod = 0
-			ch = rune(0)
+			ch = ""
 			k = tcell.KeyF63
 		} else if mod == tcell.ModCtrl || mod == tcell.ModShift {
 			// remove Ctrl or Shift if specified
@@ -410,7 +409,7 @@ func (g *Gui) pollEvent() GocuiEvent {
 			MouseX: x,
 			MouseY: y,
 			Key:    mouseKey,
-			Ch:     0,
+			Ch:     "",
 			Mod:    mouseMod,
 		}
 	case *tcell.EventFocus:

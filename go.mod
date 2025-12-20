@@ -3,7 +3,7 @@ module github.com/jesseduffield/gocui
 go 1.25
 
 require (
-	github.com/gdamore/tcell/v2 v2.13.5
+	github.com/gdamore/tcell/v3 v3.0.4
 	github.com/go-errors/errors v1.0.2
 	github.com/rivo/uniseg v0.4.7
 	github.com/stretchr/testify v1.7.0

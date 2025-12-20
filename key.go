@@ -4,24 +4,24 @@
 
 package gocui
 
-import "github.com/gdamore/tcell/v2"
+import "github.com/gdamore/tcell/v3"
 
 type Key struct {
 	keyName KeyName
-	ch      rune
+	ch      string
 }
 
 func KeyWithName(keyName KeyName) Key {
 	return Key{
 		keyName: keyName,
-		ch:      0,
+		ch:      "",
 	}
 }
 
 func KeyWithRune(ch rune) Key {
 	return Key{
 		keyName: KeyName(tcell.KeyRune),
-		ch:      ch,
+		ch:      string(ch),
 	}
 }
 
@@ -29,7 +29,7 @@ func (k Key) KeyName() KeyName {
 	return k.keyName
 }
 
-func (k Key) Ch() rune {
+func (k Key) Ch() string {
 	return k.ch
 }
 

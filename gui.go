@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 	"github.com/go-errors/errors"
 	"github.com/rivo/uniseg"
 )
@@ -265,7 +265,7 @@ func NewGui(opts NewGuiOpts) (*Gui, error) {
 	g.SupportOverlaps = opts.SupportOverlaps
 
 	// default keys for when searching strings in a view
-	g.SearchEscapeKey = Key{KeyEsc, 0}
+	g.SearchEscapeKey = KeyWithName(KeyEsc)
 	g.NextSearchMatchKey = KeyWithRune('n')
 	g.PrevSearchMatchKey = KeyWithRune('N')
 
@@ -1528,7 +1528,7 @@ func (g *Gui) execKeybindings(v *View, ev *GocuiEvent) error {
 		if v != nil && g.matchView(v.ParentView, kb) {
 			matchingParentViewKb = kb
 		}
-		if globalKb == nil && kb.viewName == "" && ((v != nil && !v.Editable) || (kb.key.Ch() == 0 && kb.key.KeyName() != KeyCtrlU && kb.key.KeyName() != KeyCtrlA && kb.key.KeyName() != KeyCtrlE)) {
+		if globalKb == nil && kb.viewName == "" && ((v != nil && !v.Editable) || (kb.key.Ch() == "" && kb.key.KeyName() != KeyCtrlU && kb.key.KeyName() != KeyCtrlA && kb.key.KeyName() != KeyCtrlE)) {
 			globalKb = kb
 		}
 	}
@@ -1640,7 +1640,7 @@ func (g *Gui) matchView(v *View, kb *keybinding) bool {
 	if v == nil {
 		return false
 	}
-	if v.Editable && kb.key.Ch() != 0 {
+	if v.Editable && kb.key.Ch() != "" {
 		return false
 	}
 	if kb.viewName != v.name {

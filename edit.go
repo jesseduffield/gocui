@@ -36,11 +36,11 @@ func SimpleEditor(v *View, key Key, mod Modifier) bool {
 		v.TextArea.MoveCursorDown()
 	case key.KeyName() == KeyArrowUp:
 		v.TextArea.MoveCursorUp()
-	case (key.KeyName() == KeyArrowLeft || key.Ch() == 'b') && (mod&ModAlt) != 0:
+	case (key.KeyName() == KeyArrowLeft || key.Ch() == "b") && (mod&ModAlt) != 0:
 		v.TextArea.MoveLeftWord()
 	case key.KeyName() == KeyArrowLeft:
 		v.TextArea.MoveCursorLeft()
-	case (key.KeyName() == KeyArrowRight || key.Ch() == 'f') && (mod&ModAlt) != 0:
+	case (key.KeyName() == KeyArrowRight || key.Ch() == "f") && (mod&ModAlt) != 0:
 		v.TextArea.MoveRightWord()
 	case key.KeyName() == KeyArrowRight:
 		v.TextArea.MoveCursorRight()
@@ -62,8 +62,8 @@ func SimpleEditor(v *View, key Key, mod Modifier) bool {
 		v.TextArea.BackSpaceWord()
 	case key.KeyName() == KeyCtrlY:
 		v.TextArea.Yank()
-	case key.Ch() != 0:
-		v.TextArea.TypeCharacter(string(key.Ch()))
+	case key.Ch() != "":
+		v.TextArea.TypeCharacter(key.Ch())
 	default:
 		return false
 	}
