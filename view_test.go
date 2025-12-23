@@ -5,76 +5,78 @@
 package gocui
 
 import (
+	"strings"
 	"testing"
 
+	"github.com/rivo/uniseg"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestWriteRunes(t *testing.T) {
+func TestWriteString(t *testing.T) {
 	tests := []struct {
 		existingLines  []string
 		stringsToWrite []string
-		expectedLines  []string
+		expectedLines  [][]string
 	}{
 		{
 			[]string{},
 			[]string{""},
-			[]string{""},
+			[][]string{{}},
 		},
 		{
 			[]string{},
 			[]string{"1\n"},
-			[]string{"1\x00"},
+			[][]string{{"1", ""}},
 		},
 		{
 			[]string{},
 			[]string{"1\n", "2\n"},
-			[]string{"1\x00", "2\x00"},
+			[][]string{{"1", ""}, {"2", ""}},
 		},
 		{
 			[]string{"a"},
 			[]string{"1\n"},
-			[]string{"1\x00"},
+			[][]string{{"1", ""}},
 		},
 		{
 			[]string{"a\x00"},
 			[]string{"1\n"},
-			[]string{"1\x00"},
+			[][]string{{"1", "\x00"}},
 		},
 		{
 			[]string{"ab"},
 			[]string{"1\n"},
-			[]string{"1b"},
+			[][]string{{"1", "b"}},
 		},
 		{
 			[]string{"abc"},
 			[]string{"1\n"},
-			[]string{"1bc"},
+			[][]string{{"1", "b", "c"}},
 		},
 		{
 			[]string{},
 			[]string{"1\r"},
-			[]string{"1\x00"},
+			[][]string{{"1", ""}},
 		},
 		{
 			[]string{"a"},
 			[]string{"1\r"},
-			[]string{"1\x00"},
+			[][]string{{"1", ""}},
 		},
 		{
 			[]string{"a\x00"},
 			[]string{"1\r"},
-			[]string{"1\x00"},
+			[][]string{{"1", "\x00"}},
 		},
 		{
 			[]string{"ab"},
 			[]string{"1\r"},
-			[]string{"1b"},
+			[][]string{{"1", "b"}},
 		},
 		{
 			[]string{"abc"},
 			[]string{"1\r"},
-			[]string{"1bc"},
+			[][]string{{"1", "b", "c"}},
 		},
 	}
 
@@ -84,11 +86,11 @@ func TestWriteRunes(t *testing.T) {
 			v.lines = append(v.lines, stringToCells(l))
 		}
 		for _, s := range test.stringsToWrite {
-			v.writeRunes([]rune(s))
+			v.writeString(s)
 		}
-		var resultingLines []string
+		var resultingLines [][]string
 		for _, l := range v.lines {
-			resultingLines = append(resultingLines, cellsToString(l))
+			resultingLines = append(resultingLines, cellsToStrings(l))
 		}
 		assert.Equal(t, test.expectedLines, resultingLines)
 	}
@@ -122,20 +124,20 @@ func TestAutoRenderingHyperlinks(t *testing.T) {
 	v := NewView("name", 0, 0, 10, 10, OutputNormal)
 	v.AutoRenderHyperLinks = true
 
-	v.writeRunes([]rune("htt"))
+	v.writeString("htt")
 	// No hyperlinks are generated for incomplete URLs
 	assert.Equal(t, "", v.lines[0][0].hyperlink)
 	// Writing more characters to the same line makes the link complete (even
 	// though we didn't see a newline yet)
-	v.writeRunes([]rune("ps://example.com"))
+	v.writeString("ps://example.com")
 	assert.Equal(t, "https://example.com", v.lines[0][0].hyperlink)
 
 	v.Clear()
 	// Valid but incomplete URL
-	v.writeRunes([]rune("https://exa"))
+	v.writeString("https://exa")
 	assert.Equal(t, "https://exa", v.lines[0][0].hyperlink)
 	// Writing more characters to the same fixes the link
-	v.writeRunes([]rune("mple.com"))
+	v.writeString("mple.com")
 	assert.Equal(t, "https://example.com", v.lines[0][0].hyperlink)
 }
 
@@ -144,7 +146,7 @@ func TestContainsColoredText(t *testing.T) {
 		cells := make([]cell, len(text))
 		hex := GetColor(hexStr)
 		for i, chr := range text {
-			cells[i] = cell{fgColor: hex, chr: chr}
+			cells[i] = cell{fgColor: hex, chr: string(chr)}
 		}
 		return cells
 	}
@@ -216,16 +218,28 @@ func TestContainsColoredText(t *testing.T) {
 
 func stringToCells(s string) []cell {
 	var cells []cell
-	for _, c := range s {
-		cells = append(cells, cell{chr: c})
+	state := -1
+	for len(s) > 0 {
+		var c string
+		var w int
+		c, s, w, state = uniseg.FirstGraphemeClusterInString(s, state)
+		cells = append(cells, cell{chr: c, width: w})
 	}
 	return cells
 }
 
 func cellsToString(cells []cell) string {
-	var s string
+	var s strings.Builder
 	for _, c := range cells {
-		s += string(c.chr)
+		s.WriteString(c.chr)
+	}
+	return s.String()
+}
+
+func cellsToStrings(cells []cell) []string {
+	s := []string{}
+	for _, c := range cells {
+		s = append(s, c.chr)
 	}
 	return s
 }

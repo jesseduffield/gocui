@@ -2,6 +2,7 @@ package gocui
 
 import (
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,15 +11,16 @@ import (
 func TestTextArea(t *testing.T) {
 	tests := []struct {
 		actions           func(*TextArea)
+		wrapWidth         int
 		expectedContent   string
 		expectedCursor    int
 		expectedClipboard string
 	}{
 		{
 			actions: func(textarea *TextArea) {
-				textarea.TypeRune('a')
-				textarea.TypeRune('b')
-				textarea.TypeRune('c')
+				textarea.TypeCharacter("a")
+				textarea.TypeCharacter("b")
+				textarea.TypeCharacter("c")
 			},
 			expectedContent:   "abc",
 			expectedCursor:    3,
@@ -26,9 +28,9 @@ func TestTextArea(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
-				textarea.TypeRune('a')
-				textarea.TypeRune('\n')
-				textarea.TypeRune('c')
+				textarea.TypeCharacter("a")
+				textarea.TypeCharacter("\n")
+				textarea.TypeCharacter("c")
 			},
 			expectedContent:   "a\nc",
 			expectedCursor:    3,
@@ -47,7 +49,7 @@ func TestTextArea(t *testing.T) {
 				textarea.TypeString("a字cd")
 			},
 			expectedContent:   "a字cd",
-			expectedCursor:    4,
+			expectedCursor:    6,
 			expectedClipboard: "",
 		},
 		{
@@ -60,7 +62,7 @@ func TestTextArea(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
-				textarea.TypeRune('a')
+				textarea.TypeCharacter("a")
 				textarea.BackSpaceChar()
 			},
 			expectedContent:   "",
@@ -69,8 +71,8 @@ func TestTextArea(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
-				textarea.TypeRune('a')
-				textarea.TypeRune('b')
+				textarea.TypeCharacter("a")
+				textarea.TypeCharacter("b")
 				textarea.BackSpaceChar()
 			},
 			expectedContent:   "a",
@@ -87,7 +89,7 @@ func TestTextArea(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
-				textarea.TypeRune('a')
+				textarea.TypeCharacter("a")
 				textarea.DeleteChar()
 			},
 			expectedContent:   "a",
@@ -96,7 +98,7 @@ func TestTextArea(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
-				textarea.TypeRune('a')
+				textarea.TypeCharacter("a")
 				textarea.MoveCursorLeft()
 				textarea.DeleteChar()
 			},
@@ -106,9 +108,9 @@ func TestTextArea(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
-				textarea.TypeRune('a')
-				textarea.TypeRune('b')
-				textarea.TypeRune('c')
+				textarea.TypeCharacter("a")
+				textarea.TypeCharacter("b")
+				textarea.TypeCharacter("c")
 				textarea.MoveCursorLeft()
 				textarea.MoveCursorLeft()
 				textarea.DeleteChar()
@@ -127,7 +129,7 @@ func TestTextArea(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
-				textarea.TypeRune('a')
+				textarea.TypeCharacter("a")
 				textarea.MoveCursorLeft()
 			},
 			expectedContent:   "a",
@@ -136,8 +138,8 @@ func TestTextArea(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
-				textarea.TypeRune('a')
-				textarea.TypeRune('b')
+				textarea.TypeCharacter("a")
+				textarea.TypeCharacter("b")
 				textarea.MoveCursorLeft()
 			},
 			expectedContent:   "ab",
@@ -154,7 +156,7 @@ func TestTextArea(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
-				textarea.TypeRune('a')
+				textarea.TypeCharacter("a")
 				textarea.MoveCursorRight()
 			},
 			expectedContent:   "a",
@@ -163,8 +165,8 @@ func TestTextArea(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
-				textarea.TypeRune('a')
-				textarea.TypeRune('b')
+				textarea.TypeCharacter("a")
+				textarea.TypeCharacter("b")
 				textarea.MoveCursorLeft()
 				textarea.MoveCursorRight()
 			},
@@ -174,19 +176,19 @@ func TestTextArea(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
-				textarea.TypeRune('漢')
-				textarea.TypeRune('字')
+				textarea.TypeCharacter("漢")
+				textarea.TypeCharacter("字")
 				textarea.MoveCursorLeft()
 			},
 			expectedContent:   "漢字",
-			expectedCursor:    1,
+			expectedCursor:    3,
 			expectedClipboard: "",
 		},
 		{
 			actions: func(textarea *TextArea) {
 				textarea.ToggleOverwrite()
-				textarea.TypeRune('a')
-				textarea.TypeRune('b')
+				textarea.TypeCharacter("a")
+				textarea.TypeCharacter("b")
 			},
 			expectedContent:   "ab",
 			expectedCursor:    2,
@@ -194,13 +196,13 @@ func TestTextArea(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
-				textarea.TypeRune('a')
-				textarea.TypeRune('b')
-				textarea.TypeRune('c')
+				textarea.TypeCharacter("a")
+				textarea.TypeCharacter("b")
+				textarea.TypeCharacter("c")
 				textarea.MoveCursorLeft()
 				textarea.MoveCursorLeft()
 				textarea.ToggleOverwrite()
-				textarea.TypeRune('d')
+				textarea.TypeCharacter("d")
 			},
 			expectedContent:   "adc",
 			expectedCursor:    2,
@@ -213,6 +215,24 @@ func TestTextArea(t *testing.T) {
 			},
 			expectedContent: "aaa bbb",
 			expectedCursor:  4,
+		},
+		{
+			actions: func(textarea *TextArea) {
+				textarea.TypeString("aaa\nbbb")
+				textarea.MoveLeftWord()
+			},
+			expectedContent: "aaa\nbbb",
+			expectedCursor:  4,
+		},
+		{
+			actions: func(textarea *TextArea) {
+				textarea.TypeString("aaa bbb")
+				textarea.GoToStartOfLine()
+				textarea.MoveLeftWord()
+			},
+			wrapWidth:       4,
+			expectedContent: "aaa bbb",
+			expectedCursor:  0,
 		},
 		{
 			actions: func(textarea *TextArea) {
@@ -262,6 +282,17 @@ func TestTextArea(t *testing.T) {
 			actions: func(textarea *TextArea) {
 				textarea.TypeString("aaa bbb")
 				textarea.GoToStartOfLine()
+				textarea.MoveCursorLeft()
+				textarea.MoveRightWord()
+			},
+			wrapWidth:       4,
+			expectedContent: "aaa bbb",
+			expectedCursor:  7,
+		},
+		{
+			actions: func(textarea *TextArea) {
+				textarea.TypeString("aaa bbb")
+				textarea.GoToStartOfLine()
 				textarea.MoveRightWord()
 			},
 			expectedContent: "aaa bbb",
@@ -281,11 +312,11 @@ func TestTextArea(t *testing.T) {
 		{
 			actions: func(textarea *TextArea) {
 				// overwrite mode acts same as normal mode when cursor is at the end
-				textarea.TypeRune('a')
-				textarea.TypeRune('b')
-				textarea.TypeRune('c')
+				textarea.TypeCharacter("a")
+				textarea.TypeCharacter("b")
+				textarea.TypeCharacter("c")
 				textarea.ToggleOverwrite()
-				textarea.TypeRune('d')
+				textarea.TypeCharacter("d")
 			},
 			expectedContent:   "abcd",
 			expectedCursor:    4,
@@ -301,8 +332,8 @@ func TestTextArea(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
-				textarea.TypeRune('a')
-				textarea.TypeRune('b')
+				textarea.TypeCharacter("a")
+				textarea.TypeCharacter("b")
 				textarea.DeleteToStartOfLine()
 			},
 			expectedContent:   "",
@@ -311,8 +342,8 @@ func TestTextArea(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
-				textarea.TypeRune('a')
-				textarea.TypeRune('b')
+				textarea.TypeCharacter("a")
+				textarea.TypeCharacter("b")
 				textarea.MoveCursorLeft()
 				textarea.MoveCursorLeft()
 				textarea.DeleteToStartOfLine()
@@ -323,9 +354,9 @@ func TestTextArea(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
-				textarea.TypeRune('a')
-				textarea.TypeRune('b')
-				textarea.TypeRune('\n')
+				textarea.TypeCharacter("a")
+				textarea.TypeCharacter("b")
+				textarea.TypeCharacter("\n")
 				textarea.DeleteToStartOfLine()
 			},
 			expectedContent:   "ab",
@@ -334,11 +365,11 @@ func TestTextArea(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
-				textarea.TypeRune('a')
-				textarea.TypeRune('b')
-				textarea.TypeRune('\n')
-				textarea.TypeRune('c')
-				textarea.TypeRune('d')
+				textarea.TypeCharacter("a")
+				textarea.TypeCharacter("b")
+				textarea.TypeCharacter("\n")
+				textarea.TypeCharacter("c")
+				textarea.TypeCharacter("d")
 				textarea.DeleteToStartOfLine()
 			},
 			expectedContent:   "ab\n",
@@ -355,7 +386,7 @@ func TestTextArea(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
-				textarea.TypeRune('a')
+				textarea.TypeCharacter("a")
 				textarea.MoveCursorLeft()
 				textarea.GoToStartOfLine()
 			},
@@ -365,11 +396,11 @@ func TestTextArea(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
-				textarea.TypeRune('a')
-				textarea.TypeRune('b')
-				textarea.TypeRune('\n')
-				textarea.TypeRune('c')
-				textarea.TypeRune('d')
+				textarea.TypeCharacter("a")
+				textarea.TypeCharacter("b")
+				textarea.TypeCharacter("\n")
+				textarea.TypeCharacter("c")
+				textarea.TypeCharacter("d")
 				textarea.MoveCursorLeft()
 				textarea.MoveCursorLeft()
 				textarea.MoveCursorLeft()
@@ -381,11 +412,11 @@ func TestTextArea(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
-				textarea.TypeRune('a')
-				textarea.TypeRune('b')
-				textarea.TypeRune('\n')
-				textarea.TypeRune('c')
-				textarea.TypeRune('d')
+				textarea.TypeCharacter("a")
+				textarea.TypeCharacter("b")
+				textarea.TypeCharacter("\n")
+				textarea.TypeCharacter("c")
+				textarea.TypeCharacter("d")
 				textarea.GoToStartOfLine()
 			},
 			expectedContent:   "ab\ncd",
@@ -394,11 +425,11 @@ func TestTextArea(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
-				textarea.TypeRune('a')
-				textarea.TypeRune('b')
-				textarea.TypeRune('\n')
-				textarea.TypeRune('c')
-				textarea.TypeRune('d')
+				textarea.TypeCharacter("a")
+				textarea.TypeCharacter("b")
+				textarea.TypeCharacter("\n")
+				textarea.TypeCharacter("c")
+				textarea.TypeCharacter("d")
 				textarea.MoveCursorLeft()
 				textarea.MoveCursorLeft()
 				textarea.GoToStartOfLine()
@@ -417,11 +448,11 @@ func TestTextArea(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
-				textarea.TypeRune('a')
-				textarea.TypeRune('b')
-				textarea.TypeRune('\n')
-				textarea.TypeRune('c')
-				textarea.TypeRune('d')
+				textarea.TypeCharacter("a")
+				textarea.TypeCharacter("b")
+				textarea.TypeCharacter("\n")
+				textarea.TypeCharacter("c")
+				textarea.TypeCharacter("d")
 				textarea.MoveCursorLeft()
 				textarea.MoveCursorLeft()
 				textarea.GoToEndOfLine()
@@ -502,7 +533,7 @@ func TestTextArea(t *testing.T) {
 				textarea.MoveCursorDown()
 			},
 			expectedContent:   "abcdef\n老老老",
-			expectedCursor:    9,
+			expectedCursor:    13,
 			expectedClipboard: "",
 		},
 		{
@@ -679,18 +710,25 @@ func TestTextArea(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		textarea := &TextArea{}
-		test.actions(textarea)
-		assert.EqualValues(t, test.expectedContent, textarea.GetContent())
-		assert.EqualValues(t, test.expectedCursor, textarea.cursor)
-		assert.EqualValues(t, test.expectedClipboard, textarea.clipboard)
+	for i, test := range tests {
+		t.Run(strconv.Itoa(i+1), func(t *testing.T) {
+			textarea := &TextArea{}
+			if test.wrapWidth > 0 {
+				textarea.AutoWrap = true
+				textarea.AutoWrapWidth = test.wrapWidth
+			}
+			test.actions(textarea)
+			assert.EqualValues(t, test.expectedContent, textarea.GetUnwrappedContent())
+			assert.EqualValues(t, test.expectedCursor, textarea.cursor)
+			assert.EqualValues(t, test.expectedClipboard, textarea.clipboard)
+		})
 	}
 }
 
 func TestGetCursorXY(t *testing.T) {
 	tests := []struct {
 		actions   func(*TextArea)
+		wrapWidth int
 		expectedX int
 		expectedY int
 	}{
@@ -703,10 +741,55 @@ func TestGetCursorXY(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
+				textarea.TypeString("\n")
+			},
+			expectedX: 0,
+			expectedY: 1,
+		},
+		{
+			actions: func(textarea *TextArea) {
+				textarea.TypeString("\na")
+			},
+			expectedX: 1,
+			expectedY: 1,
+		},
+		{
+			actions: func(textarea *TextArea) {
+				textarea.TypeString("\n")
+				textarea.MoveCursorUp()
+			},
+			expectedX: 0,
+			expectedY: 0,
+		},
+		{
+			actions: func(textarea *TextArea) {
+				textarea.TypeString("\n\n")
+				textarea.MoveCursorUp()
+			},
+			expectedX: 0,
+			expectedY: 1,
+		},
+		{
+			actions: func(textarea *TextArea) {
 				textarea.TypeString("ab\ncd")
 			},
 			expectedX: 2,
 			expectedY: 1,
+		},
+		{
+			actions: func(textarea *TextArea) {
+				textarea.TypeString("ab\n")
+			},
+			expectedX: 0,
+			expectedY: 1,
+		},
+		{
+			actions: func(textarea *TextArea) {
+				textarea.TypeString("ab\n")
+				textarea.MoveCursorLeft()
+			},
+			expectedX: 2,
+			expectedY: 0,
 		},
 		{
 			actions: func(textarea *TextArea) {
@@ -717,20 +800,69 @@ func TestGetCursorXY(t *testing.T) {
 		},
 		{
 			actions: func(textarea *TextArea) {
-				textarea.TypeRune('漢')
-				textarea.TypeRune('字')
+				textarea.TypeString("ab\n\n")
+				textarea.MoveCursorLeft()
+			},
+			expectedX: 0,
+			expectedY: 1,
+		},
+		{
+			actions: func(textarea *TextArea) {
+				textarea.TypeCharacter("漢")
+				textarea.TypeCharacter("字")
 			},
 			expectedX: 4,
 			expectedY: 0,
 		},
+		{
+			actions: func(textarea *TextArea) {
+				textarea.TypeString("abc de")
+				textarea.MoveCursorLeft()
+			},
+			wrapWidth: 4,
+			expectedX: 1,
+			expectedY: 1,
+		},
+		{
+			actions: func(textarea *TextArea) {
+				textarea.TypeString("abc de")
+				textarea.MoveCursorLeft()
+				textarea.MoveCursorLeft()
+			},
+			wrapWidth: 4,
+			expectedX: 0,
+			expectedY: 1,
+		},
+		{
+			actions: func(textarea *TextArea) {
+				textarea.TypeString("abc de")
+				textarea.MoveCursorLeft()
+				textarea.MoveCursorLeft()
+				textarea.MoveCursorLeft()
+			},
+			wrapWidth: 4,
+			expectedX: 3,
+			expectedY: 0,
+		},
 	}
 
-	for _, test := range tests {
-		textarea := &TextArea{}
-		test.actions(textarea)
-		x, y := textarea.GetCursorXY()
-		assert.EqualValues(t, test.expectedX, x)
-		assert.EqualValues(t, test.expectedY, y)
+	for i, test := range tests {
+		t.Run(strconv.Itoa(i+1), func(t *testing.T) {
+			textarea := &TextArea{}
+			if test.wrapWidth > 0 {
+				textarea.AutoWrap = true
+				textarea.AutoWrapWidth = test.wrapWidth
+			}
+			test.actions(textarea)
+			x, y := textarea.GetCursorXY()
+			assert.EqualValues(t, test.expectedX, x)
+			assert.EqualValues(t, test.expectedY, y)
+
+			// As a sanity check, test that setting the cursor back to (x, y) results in the same cursor position:
+			cursor := textarea.cursor
+			textarea.SetCursor2D(x, y)
+			assert.EqualValues(t, cursor, textarea.cursor)
+		})
 	}
 }
 
@@ -740,104 +872,123 @@ func Test_AutoWrapContent(t *testing.T) {
 		content                string
 		autoWrapWidth          int
 		expectedWrappedContent string
-		expectedCursorMapping  []CursorMapping
+		expectedSoftLineBreaks []int
 	}{
 		{
 			name:                   "empty content",
 			content:                "",
 			autoWrapWidth:          7,
 			expectedWrappedContent: "",
-			expectedCursorMapping:  []CursorMapping{},
+			expectedSoftLineBreaks: []int{},
 		},
 		{
 			name:                   "no wrapping necessary",
 			content:                "abcde",
 			autoWrapWidth:          7,
 			expectedWrappedContent: "abcde",
-			expectedCursorMapping:  []CursorMapping{},
+			expectedSoftLineBreaks: []int{},
 		},
 		{
 			name:                   "wrap at whitespace",
 			content:                "abcde xyz",
 			autoWrapWidth:          7,
 			expectedWrappedContent: "abcde \nxyz",
-			expectedCursorMapping:  []CursorMapping{{6, 7}},
+			expectedSoftLineBreaks: []int{6},
+		},
+		{
+			name:                   "take wide characters into account",
+			content:                "🏴󠁧󠁢󠁥󠁮󠁧󠁿 🏴󠁧󠁢󠁥󠁮󠁧󠁿 x y", // the flag has a width of 2
+			autoWrapWidth:          7,
+			expectedWrappedContent: "🏴󠁧󠁢󠁥󠁮󠁧󠁿 🏴󠁧󠁢󠁥󠁮󠁧󠁿 x \ny",
+			expectedSoftLineBreaks: []int{60},
+		},
+		{
+			name:                   "take wide characters into account at line end",
+			content:                "🏴󠁧󠁢󠁥󠁮󠁧󠁿 🏴󠁧󠁢󠁥󠁮󠁧󠁿 🏴󠁧󠁢󠁥󠁮󠁧󠁿", // the flag has a width of 2
+			autoWrapWidth:          7,
+			expectedWrappedContent: "🏴󠁧󠁢󠁥󠁮󠁧󠁿 🏴󠁧󠁢󠁥󠁮󠁧󠁿 \n🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+			expectedSoftLineBreaks: []int{58},
 		},
 		{
 			name:                   "lots of whitespace is preserved at end of line",
 			content:                "abcde      xyz",
 			autoWrapWidth:          7,
 			expectedWrappedContent: "abcde      \nxyz",
-			expectedCursorMapping:  []CursorMapping{{11, 12}},
+			expectedSoftLineBreaks: []int{11},
 		},
 		{
 			name:                   "don't wrap inside long word when there's no whitespace",
 			content:                "abc defghijklmn opq",
 			autoWrapWidth:          7,
 			expectedWrappedContent: "abc \ndefghijklmn \nopq",
-			expectedCursorMapping:  []CursorMapping{{4, 5}, {16, 18}},
+			expectedSoftLineBreaks: []int{4, 16},
 		},
 		{
 			name:                   "don't break at space after footnote symbol",
 			content:                "abc\n[1]: https://long/link\ndef",
 			autoWrapWidth:          7,
 			expectedWrappedContent: "abc\n[1]: https://long/link\ndef",
-			expectedCursorMapping:  []CursorMapping{},
+			expectedSoftLineBreaks: []int{},
 		},
 		{
 			name:                   "don't break at space after footnote symbol at soft line start",
 			content:                "abc def [1]: https://long/link\nghi",
 			autoWrapWidth:          7,
 			expectedWrappedContent: "abc def \n[1]: https://long/link\nghi",
-			expectedCursorMapping:  []CursorMapping{{8, 9}},
+			expectedSoftLineBreaks: []int{8},
 		},
 		{
 			name:                   "do break at subsequent space after footnote symbol",
 			content:                "abc\n[1]: normal text follows\ndef",
 			autoWrapWidth:          7,
 			expectedWrappedContent: "abc\n[1]: normal \ntext \nfollows\ndef",
-			expectedCursorMapping:  []CursorMapping{{16, 17}, {21, 23}},
+			expectedSoftLineBreaks: []int{16, 21},
 		},
 		{
 			name:                   "hard line breaks",
 			content:                "abc\ndef\n",
 			autoWrapWidth:          7,
 			expectedWrappedContent: "abc\ndef\n",
-			expectedCursorMapping:  []CursorMapping{},
+			expectedSoftLineBreaks: []int{},
 		},
 		{
 			name:                   "mixture of hard and soft line breaks",
 			content:                "abc def ghi jkl mno\npqr stu vwx yz\n",
 			autoWrapWidth:          7,
 			expectedWrappedContent: "abc def \nghi jkl \nmno\npqr stu \nvwx yz\n",
-			expectedCursorMapping:  []CursorMapping{{8, 9}, {16, 18}, {28, 31}},
+			expectedSoftLineBreaks: []int{8, 16, 28},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wrappedContent, cursorMapping := AutoWrapContent([]rune(tt.content), tt.autoWrapWidth)
-			if !reflect.DeepEqual(wrappedContent, []rune(tt.expectedWrappedContent)) {
-				t.Errorf("autoWrapContentImpl() wrappedContent = %v, expected %v", string(wrappedContent), tt.expectedWrappedContent)
+			textArea := &TextArea{content: tt.content, AutoWrapWidth: tt.autoWrapWidth, AutoWrap: true}
+			cells, softLineBreakIndices := contentToCells(tt.content, tt.autoWrapWidth)
+			textArea.cells = cells
+			if !reflect.DeepEqual(textArea.GetContent(), tt.expectedWrappedContent) {
+				t.Errorf("autoWrapContentImpl() wrappedContent = %v, expected %v", textArea.GetContent(), tt.expectedWrappedContent)
 			}
-			if !reflect.DeepEqual(cursorMapping, tt.expectedCursorMapping) {
-				t.Errorf("autoWrapContentImpl() cursorMapping = %v, expected %v", cursorMapping, tt.expectedCursorMapping)
+			if !reflect.DeepEqual(softLineBreakIndices, tt.expectedSoftLineBreaks) {
+				t.Errorf("autoWrapContentImpl() softLineBreakIndices = %v, expected %v", softLineBreakIndices, tt.expectedSoftLineBreaks)
 			}
 
-			// As a sanity check, run through all runes of the original content,
-			// convert the cursor to the wrapped cursor, and check that the rune
+			// As a sanity check, run through all characters of the original content,
+			// convert the cursor to the wrapped cursor, and check that the character
 			// in the wrapped content at that position is the same:
-			for i, r := range tt.content {
-				wrappedIndex := origCursorToWrappedCursor(i, cursorMapping)
-				if r != wrappedContent[wrappedIndex] {
-					t.Errorf("Runes in orig content and wrapped content don't match at %d: expected %v, got %v", i, r, wrappedContent[wrappedIndex])
+			origCursor := 0
+			for _, chr := range stringToGraphemes(tt.content) {
+				wrappedIndex := textArea.contentCursorToCellCursor(origCursor)
+				if chr != textArea.cells[wrappedIndex].char {
+					t.Errorf("Runes in orig content and wrapped content don't match at %d: expected %v, got %v", origCursor, chr, textArea.cells[wrappedIndex].char)
 				}
 
 				// Also, check that converting the wrapped position back to the
 				// orig position yields the original value again:
-				origIndexAgain := wrappedCursorToOrigCursor(wrappedIndex, cursorMapping)
-				if i != origIndexAgain {
-					t.Errorf("wrappedCursorToOrigCursor doesn't yield original position: expected %d, got %d", i, origIndexAgain)
+				origIndexAgain := textArea.cellCursorToContentCursor(wrappedIndex)
+				if origCursor != origIndexAgain {
+					t.Errorf("wrappedCursorToOrigCursor doesn't yield original position: expected %d, got %d", origCursor, origIndexAgain)
 				}
+
+				origCursor += len(chr)
 			}
 		})
 	}
