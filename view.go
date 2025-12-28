@@ -132,6 +132,12 @@ type View struct {
 	//  []rune{'═','║','╔','╗','╚','╝','╠','╣','╦','╩','╬'}
 	FrameRunes []rune
 
+	// PaddingX specifies the horizontal padding (left and right) inside the frame.
+	PaddingX int
+
+	// PaddingY specifies the vertical padding (top and bottom) inside the frame.
+	PaddingY int
+
 	// If Wrap is true, the content that is written to this View is
 	// automatically wrapped when it is longer than its width. If true the
 	// view's x-origin will be ignored.
@@ -474,7 +480,7 @@ func (v *View) Height() int {
 // view is made 1 larger on all sides. I'd like to clean this up at some point,
 // but for now we live with this weirdness.
 func (v *View) InnerWidth() int {
-	innerWidth := v.Width() - 2
+	innerWidth := v.Width() - 2 - 2*v.PaddingX
 	if innerWidth < 0 {
 		return 0
 	}
@@ -483,7 +489,7 @@ func (v *View) InnerWidth() int {
 }
 
 func (v *View) InnerHeight() int {
-	innerHeight := v.Height() - 2
+	innerHeight := v.Height() - 2 - 2*v.PaddingY
 	if innerHeight < 0 {
 		return 0
 	}
@@ -551,7 +557,7 @@ func (v *View) setCharacter(x, y int, ch string, fgColor, bgColor Attribute) {
 		ch = " "
 	}
 
-	tcellSetCell(v.x0+x+1, v.y0+y+1, ch, fgColor, bgColor, v.outMode)
+	tcellSetCell(v.x0+x+1+v.PaddingX, v.y0+y+1+v.PaddingY, ch, fgColor, bgColor, v.outMode)
 }
 
 // SetCursor sets the cursor position of the view at the given point,
