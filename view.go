@@ -7,6 +7,7 @@ package gocui
 import (
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 	"sync"
 	"unicode"
@@ -248,6 +249,67 @@ func (v *View) gotoPreviousMatch() error {
 		v.searcher.currentSearchIndex--
 	}
 	return v.SelectSearchResult(v.searcher.currentSearchIndex)
+}
+
+func (v *View) gotoNextMatchFromCursor() error {
+	if len(v.searcher.searchPositions) == 0 {
+		return nil
+	}
+
+	positions := v.searcher.searchPositions
+	currentIdx := v.searcher.currentSearchIndex
+	currentLine := v.SelectedLineIdx()
+
+	// If current match is on same line, check next position
+	if currentIdx >= 0 && currentIdx < len(positions) && positions[currentIdx].Y == currentLine {
+		if currentIdx+1 < len(positions) && positions[currentIdx+1].Y == currentLine {
+			v.searcher.currentSearchIndex = currentIdx + 1
+			return v.SelectSearchResult(currentIdx + 1)
+		}
+	}
+
+	// Find first match after current line
+	nextIndex := sort.Search(len(positions), func(i int) bool {
+		return positions[i].Y > currentLine
+	})
+
+	if nextIndex >= len(positions) {
+		nextIndex = 0
+	}
+
+	v.searcher.currentSearchIndex = nextIndex
+	return v.SelectSearchResult(nextIndex)
+}
+
+func (v *View) gotoPreviousMatchFromCursor() error {
+	if len(v.searcher.searchPositions) == 0 {
+		return nil
+	}
+
+	positions := v.searcher.searchPositions
+	currentIdx := v.searcher.currentSearchIndex
+	currentLine := v.SelectedLineIdx()
+
+	// If current match is on same line, check previous position
+	if currentIdx >= 0 && currentIdx < len(positions) && positions[currentIdx].Y == currentLine {
+		if currentIdx-1 >= 0 && positions[currentIdx-1].Y == currentLine {
+			v.searcher.currentSearchIndex = currentIdx - 1
+			return v.SelectSearchResult(currentIdx - 1)
+		}
+	}
+
+	// Find first match on or after current line, then go back one
+	idx := sort.Search(len(positions), func(i int) bool {
+		return positions[i].Y >= currentLine
+	})
+
+	prevIndex := idx - 1
+	if prevIndex < 0 {
+		prevIndex = len(positions) - 1
+	}
+
+	v.searcher.currentSearchIndex = prevIndex
+	return v.SelectSearchResult(prevIndex)
 }
 
 func (v *View) SelectSearchResult(index int) error {
