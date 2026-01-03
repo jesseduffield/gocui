@@ -217,11 +217,22 @@ type searcher struct {
 	searchPositions    []SearchPosition
 	modelSearchResults []SearchPosition
 	currentSearchIndex int
-	onSelectItem       func(int, int, int) error
+	onSelectItem       func(int)
+	renderSearchStatus func(int, int)
 }
 
-func (v *View) SetOnSelectItem(onSelectItem func(int, int, int) error) {
+func (v *View) SetRenderSearchStatus(renderSearchStatus func(int, int)) {
+	v.searcher.renderSearchStatus = renderSearchStatus
+}
+
+func (v *View) SetOnSelectItem(onSelectItem func(int)) {
 	v.searcher.onSelectItem = onSelectItem
+}
+
+func (v *View) renderSearchStatus(index int, itemCount int) {
+	if v.searcher.renderSearchStatus != nil {
+		v.searcher.renderSearchStatus(index, itemCount)
+	}
 }
 
 func (v *View) gotoNextMatch() error {
@@ -233,7 +244,8 @@ func (v *View) gotoNextMatch() error {
 	} else {
 		v.searcher.currentSearchIndex++
 	}
-	return v.SelectSearchResult(v.searcher.currentSearchIndex)
+	v.SelectSearchResult(v.searcher.currentSearchIndex)
+	return nil
 }
 
 func (v *View) gotoPreviousMatch() error {
@@ -247,13 +259,14 @@ func (v *View) gotoPreviousMatch() error {
 	} else {
 		v.searcher.currentSearchIndex--
 	}
-	return v.SelectSearchResult(v.searcher.currentSearchIndex)
+	v.SelectSearchResult(v.searcher.currentSearchIndex)
+	return nil
 }
 
-func (v *View) SelectSearchResult(index int) error {
+func (v *View) SelectSearchResult(index int) {
 	itemCount := len(v.searcher.searchPositions)
 	if itemCount == 0 {
-		return nil
+		return
 	}
 	if index > itemCount-1 {
 		index = itemCount - 1
@@ -262,10 +275,10 @@ func (v *View) SelectSearchResult(index int) error {
 	y := v.searcher.searchPositions[index].Y
 
 	v.FocusPoint(v.ox, y, true)
+	v.renderSearchStatus(index, itemCount)
 	if v.searcher.onSelectItem != nil {
-		return v.searcher.onSelectItem(y, index, itemCount)
+		v.searcher.onSelectItem(y)
 	}
-	return nil
 }
 
 // Returns <current match index>, <total matches>
@@ -309,14 +322,14 @@ func (v *View) UpdateSearchResults(str string, modelSearchResults []SearchPositi
 	}
 }
 
-func (v *View) Search(str string, modelSearchResults []SearchPosition) error {
+func (v *View) Search(str string, modelSearchResults []SearchPosition) {
 	v.UpdateSearchResults(str, modelSearchResults)
 
 	if len(v.searcher.searchPositions) > 0 {
-		return v.SelectSearchResult(v.searcher.currentSearchIndex)
+		v.SelectSearchResult(v.searcher.currentSearchIndex)
+	} else {
+		v.renderSearchStatus(0, 0)
 	}
-
-	return v.searcher.onSelectItem(-1, -1, 0)
 }
 
 func (v *View) ClearSearch() {
