@@ -340,6 +340,31 @@ func (v *View) IsSearching() bool {
 	return v.searcher.searchString != ""
 }
 
+func (v *View) nearestSearchPosition() int {
+	currentLineIndex := v.cy + v.oy
+	lastSearchPos := 0
+	for i, pos := range v.searcher.searchPositions {
+		if pos.Y == currentLineIndex {
+			return i
+		}
+		if pos.Y > currentLineIndex {
+			break
+		}
+		lastSearchPos = i
+	}
+	return lastSearchPos
+}
+
+func (v *View) SetNearestSearchPosition() {
+	if len(v.searcher.searchPositions) > 0 {
+		newPos := v.nearestSearchPosition()
+		if newPos != v.searcher.currentSearchIndex {
+			v.searcher.currentSearchIndex = newPos
+			v.renderSearchStatus(newPos, len(v.searcher.searchPositions))
+		}
+	}
+}
+
 func (v *View) FocusPoint(cx int, cy int, scrollIntoView bool) {
 	v.writeMutex.Lock()
 	defer v.writeMutex.Unlock()
