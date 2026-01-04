@@ -1814,6 +1814,52 @@ func (v *View) setContentLineCount(lineCount int) {
 	v.lines = v.lines[:lineCount]
 }
 
+// If the current search result is no longer visible after a scroll up, select the last search
+// result that is visible in the view, if any, or the first one that is below the view if none is
+// visible.
+func (v *View) selectVisibleSearchResultAfterScrollUp() {
+	if !v.Highlight && len(v.searcher.searchPositions) != 0 {
+		windowBottom := v.oy + v.InnerHeight()
+		if v.searcher.searchPositions[v.searcher.currentSearchIndex].Y >= windowBottom {
+			newSearchIndex := v.searcher.currentSearchIndex
+			for newSearchIndex > 0 &&
+				v.searcher.searchPositions[newSearchIndex-1].Y >= v.oy {
+				newSearchIndex--
+				if v.searcher.searchPositions[newSearchIndex].Y < windowBottom {
+					break
+				}
+			}
+			if v.searcher.currentSearchIndex != newSearchIndex {
+				v.searcher.currentSearchIndex = newSearchIndex
+				v.renderSearchStatus(newSearchIndex, len(v.searcher.searchPositions))
+			}
+		}
+	}
+}
+
+// If the current search result is no longer visible after a scroll down, select the first search
+// result that is visible in the view, if any, or the last one that is above the view if none is
+// visible.
+func (v *View) selectVisibleSearchResultAfterScrollDown() {
+	if !v.Highlight && len(v.searcher.searchPositions) != 0 {
+		if v.searcher.searchPositions[v.searcher.currentSearchIndex].Y < v.oy {
+			newSearchIndex := v.searcher.currentSearchIndex
+			windowBottom := v.oy + v.InnerHeight()
+			for newSearchIndex+1 < len(v.searcher.searchPositions) &&
+				v.searcher.searchPositions[newSearchIndex+1].Y < windowBottom {
+				newSearchIndex++
+				if v.searcher.searchPositions[newSearchIndex].Y >= v.oy {
+					break
+				}
+			}
+			if v.searcher.currentSearchIndex != newSearchIndex {
+				v.searcher.currentSearchIndex = newSearchIndex
+				v.renderSearchStatus(newSearchIndex, len(v.searcher.searchPositions))
+			}
+		}
+	}
+}
+
 func (v *View) ScrollUp(amount int) {
 	if amount > v.oy {
 		amount = v.oy
@@ -1824,6 +1870,7 @@ func (v *View) ScrollUp(amount int) {
 		v.cy += amount
 
 		v.clearHover()
+		v.selectVisibleSearchResultAfterScrollUp()
 	}
 }
 
@@ -1835,6 +1882,7 @@ func (v *View) ScrollDown(amount int) {
 		v.cy -= adjustedAmount
 
 		v.clearHover()
+		v.selectVisibleSearchResultAfterScrollDown()
 	}
 }
 
