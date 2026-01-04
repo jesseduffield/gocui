@@ -239,6 +239,12 @@ func (v *View) gotoNextMatch() error {
 	if len(v.searcher.searchPositions) == 0 {
 		return nil
 	}
+	if v.Highlight && v.oy+v.cy < v.searcher.searchPositions[v.searcher.currentSearchIndex].Y {
+		// If the selection is before the current match, just jump to the current match and return.
+		// This can only happen if the user has moved the cursor to before the first match.
+		v.SelectSearchResult(v.searcher.currentSearchIndex)
+		return nil
+	}
 	if v.searcher.currentSearchIndex >= len(v.searcher.searchPositions)-1 {
 		v.searcher.currentSearchIndex = 0
 	} else {
@@ -250,6 +256,12 @@ func (v *View) gotoNextMatch() error {
 
 func (v *View) gotoPreviousMatch() error {
 	if len(v.searcher.searchPositions) == 0 {
+		return nil
+	}
+	if v.Highlight && v.oy+v.cy > v.searcher.searchPositions[v.searcher.currentSearchIndex].Y {
+		// If the selection is after the current match, just jump to the current match and return.
+		// This happens if the user has moved the cursor down from the current match.
+		v.SelectSearchResult(v.searcher.currentSearchIndex)
 		return nil
 	}
 	if v.searcher.currentSearchIndex == 0 {
