@@ -294,12 +294,15 @@ func (v *View) UpdateSearchResults(str string, modelSearchResults []SearchPositi
 	if len(v.searcher.searchPositions) > 0 {
 		// get the first result past the current cursor
 		currentIndex := 0
-		adjustedY := v.oy + v.cy
-		adjustedX := v.ox + v.cx
-		for i, pos := range v.searcher.searchPositions {
-			if pos.Y > adjustedY || (pos.Y == adjustedY && pos.XStart > adjustedX) {
-				currentIndex = i
-				break
+		if v.Highlight {
+			// ...but only if we're showing the highlighted line
+			adjustedY := v.oy + v.cy
+			adjustedX := v.ox + v.cx
+			for i, pos := range v.searcher.searchPositions {
+				if pos.Y > adjustedY || (pos.Y == adjustedY && pos.XStart > adjustedX) {
+					currentIndex = i
+					break
+				}
 			}
 		}
 		v.searcher.currentSearchIndex = currentIndex
