@@ -945,6 +945,20 @@ func Test_AutoWrapContent(t *testing.T) {
 			expectedSoftLineBreaks: []int{16, 21},
 		},
 		{
+			name:                   "don't break at space after trailer",
+			content:                "abc\nSigned-off-by: John Doe <john@doe.com>\nCo-authored-by: Jane Smith <jane@smith.com>\n",
+			autoWrapWidth:          10,
+			expectedWrappedContent: "abc\nSigned-off-by: \nJohn Doe \n<john@doe.com>\nCo-authored-by: \nJane Smith \n<jane@smith.com>\n",
+			expectedSoftLineBreaks: []int{19, 28, 59, 70},
+		},
+		{
+			name:                   "do break at space after trailer if there is no space after the colon",
+			content:                "abc\nSigned-off-by:John Doe <john@doe.com>\n",
+			autoWrapWidth:          10,
+			expectedWrappedContent: "abc\nSigned-off-by:John \nDoe \n<john@doe.com>\n",
+			expectedSoftLineBreaks: []int{23, 27},
+		},
+		{
 			name:                   "hard line breaks",
 			content:                "abc\ndef\n",
 			autoWrapWidth:          7,
