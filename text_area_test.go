@@ -945,6 +945,20 @@ func Test_AutoWrapContent(t *testing.T) {
 			expectedSoftLineBreaks: []int{16, 21},
 		},
 		{
+			name:                   "don't break at space after trailer",
+			content:                "abc\nSigned-off-by: John Doe <john@doe.com>\nCo-authored-by: Jane Smith <jane@smith.com>\n",
+			autoWrapWidth:          10,
+			expectedWrappedContent: "abc\nSigned-off-by: John Doe <john@doe.com>\nCo-authored-by: Jane Smith <jane@smith.com>\n",
+			expectedSoftLineBreaks: []int{},
+		},
+		{
+			name:                   "do break at space after trailer if there is no space after the colon",
+			content:                "abc\nSigned-off-by:John Doe <john@doe.com>\n",
+			autoWrapWidth:          10,
+			expectedWrappedContent: "abc\nSigned-off-by:John \nDoe \n<john@doe.com>\n",
+			expectedSoftLineBreaks: []int{23, 27},
+		},
+		{
 			name:                   "hard line breaks",
 			content:                "abc\ndef\n",
 			autoWrapWidth:          7,
@@ -991,5 +1005,39 @@ func Test_AutoWrapContent(t *testing.T) {
 				origCursor += len(chr)
 			}
 		})
+	}
+}
+
+var testContent string = `Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+Quisque vehicula mi at elit pellentesque, eu pulvinar ligula molestie.
+In vitae orci vitae elit fermentum lobortis sed in nisi.
+Nam non odio nisi.
+Donec vitae elit enim.
+Pellentesque faucibus dolor at metus elementum sollicitudin.
+Mauris eu orci vel odio ornare feugiat eget ac nisl.
+Nam at dolor erat.
+Integer sit amet rutrum lectus, mollis pretium sapien.
+Maecenas ligula ipsum, congue vitae rhoncus eget, volutpat at quam.
+Donec ac ultricies tortor, sit amet sollicitudin urna.
+Integer porta ornare diam a imperdiet.
+Praesent vulputate mi turpis, in porttitor diam commodo a.
+Donec ut enim ligula.
+
+[Thïs-is-not-à-fôôtnöte]: https://example.com/footnote
+
+Sïgned-öff-by: This is not a trailer
+
+[1]: This is a footnote
+
+Signed-off-by: John Doe <john@doe.com>
+`
+
+func BenchmarkTypeCharacter(b *testing.B) {
+	textArea := &TextArea{content: testContent, AutoWrapWidth: 72, AutoWrap: true}
+	textArea.SetCursor2D(0, 0)
+
+	b.ResetTimer()
+	for b.Loop() {
+		textArea.TypeCharacter("a")
 	}
 }
