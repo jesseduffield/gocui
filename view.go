@@ -462,6 +462,10 @@ func characterEquals(chr []byte, b byte) bool {
 	return len(chr) == 1 && chr[0] == b
 }
 
+func isCRLF(chr []byte) bool {
+	return len(chr) == 2 && chr[0] == '\r' && chr[1] == '\n'
+}
+
 // String returns a string from a given cell slice.
 func (l lineType) String() string {
 	var str strings.Builder
@@ -837,7 +841,7 @@ func (v *View) write(p []byte) {
 		chr, remaining, width, state = uniseg.FirstGraphemeCluster(remaining, state)
 
 		switch {
-		case characterEquals(chr, '\n'):
+		case characterEquals(chr, '\n') || isCRLF(chr):
 			finishLine()
 			advanceToNextLine()
 		case characterEquals(chr, '\r'):
