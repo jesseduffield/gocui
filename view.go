@@ -167,9 +167,6 @@ type View struct {
 	// If HasLoader is true, the message will be appended with a spinning loader animation
 	HasLoader bool
 
-	// IgnoreCarriageReturns tells us whether to ignore '\r' characters
-	IgnoreCarriageReturns bool
-
 	// ParentView is the view which catches events bubbled up from the given view if there's no matching handler
 	ParentView *View
 
