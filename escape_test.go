@@ -28,6 +28,26 @@ func TestParseOne(t *testing.T) {
 	parseEscRunes(t, ei, "\x1b[1K")
 	_, ok = ei.instruction.(noInstruction)
 	assert.Equal(t, true, ok)
+
+	ei = newEscapeInterpreter(OutputNormal)
+	parseEscRunes(t, ei, "\x1b(B")
+	_, ok = ei.instruction.(noInstruction)
+	assert.Equal(t, true, ok)
+
+	ei = newEscapeInterpreter(OutputNormal)
+	parseEscRunes(t, ei, "\x1b)0")
+	_, ok = ei.instruction.(noInstruction)
+	assert.Equal(t, true, ok)
+
+	ei = newEscapeInterpreter(OutputNormal)
+	parseEscRunes(t, ei, "\x1b*A")
+	_, ok = ei.instruction.(noInstruction)
+	assert.Equal(t, true, ok)
+
+	ei = newEscapeInterpreter(OutputNormal)
+	parseEscRunes(t, ei, "\x1b+K")
+	_, ok = ei.instruction.(noInstruction)
+	assert.Equal(t, true, ok)
 }
 
 func TestParseOneColours(t *testing.T) {
