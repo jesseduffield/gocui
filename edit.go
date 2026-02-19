@@ -30,6 +30,8 @@ func SimpleEditor(v *View, key Key, ch rune, mod Modifier) bool {
 		v.TextArea.BackSpaceWord()
 	case key == KeyBackspace || key == KeyBackspace2 || key == KeyCtrlH:
 		v.TextArea.BackSpaceChar()
+	case key == KeyDelete && (mod&ModAlt) != 0:
+		v.TextArea.DeleteWord()
 	case key == KeyCtrlD || key == KeyDelete:
 		v.TextArea.DeleteChar()
 	case key == KeyArrowDown:
