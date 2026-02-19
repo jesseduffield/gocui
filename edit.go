@@ -40,10 +40,14 @@ func SimpleEditor(v *View, key Key, ch rune, mod Modifier) bool {
 		v.TextArea.MoveLeftWord()
 	case key == KeyArrowLeft || key == KeyCtrlB:
 		v.TextArea.MoveCursorLeft()
+	case key == KeyCtrlArrowLeft:
+		v.TextArea.MoveLeftWord()
 	case (key == KeyArrowRight || ch == 'f') && (mod&ModAlt) != 0:
 		v.TextArea.MoveRightWord()
 	case key == KeyArrowRight || key == KeyCtrlF:
 		v.TextArea.MoveCursorRight()
+	case key == KeyCtrlArrowRight:
+		v.TextArea.MoveRightWord()
 	case key == KeyEnter:
 		v.TextArea.TypeCharacter("\n")
 	case key == KeySpace:
