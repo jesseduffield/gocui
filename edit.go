@@ -64,6 +64,10 @@ func SimpleEditor(v *View, key Key, ch rune, mod Modifier) bool {
 		v.TextArea.GoToEndOfLine()
 	case key == KeyCtrlW:
 		v.TextArea.BackSpaceWord()
+	case key == KeyCtrlBackspace:
+		v.TextArea.BackSpaceWord()
+	case key == KeyCtrlDelete:
+		v.TextArea.DeleteWord()
 	case key == KeyCtrlY:
 		v.TextArea.Yank()
 	case ch != 0:
