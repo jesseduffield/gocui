@@ -311,6 +311,30 @@ func (g *Gui) pollEvent() GocuiEvent {
 			mod = 0
 			ch = rune(0)
 			k = tcell.KeyF63
+		} else if mod == tcell.ModCtrl && k == tcell.KeyLeft {
+			mod = 0
+			ch = rune(0)
+			k = tcell.KeyF52
+		} else if mod == tcell.ModCtrl && k == tcell.KeyRight {
+			mod = 0
+			ch = rune(0)
+			k = tcell.KeyF53
+		} else if mod == tcell.ModCtrl && k == tcell.KeyUp {
+			mod = 0
+			ch = rune(0)
+			k = tcell.KeyF54
+		} else if mod == tcell.ModCtrl && k == tcell.KeyDown {
+			mod = 0
+			ch = rune(0)
+			k = tcell.KeyF55
+		} else if mod == tcell.ModCtrl && k == tcell.KeyBackspace {
+			mod = 0
+			ch = rune(0)
+			k = tcell.KeyF56
+		} else if mod == tcell.ModCtrl && k == tcell.KeyDelete {
+			mod = 0
+			ch = rune(0)
+			k = tcell.KeyF57
 		} else if mod == tcell.ModCtrl || mod == tcell.ModShift {
 			// remove Ctrl or Shift if specified
 			// - shift - will be translated to the final code of rune
