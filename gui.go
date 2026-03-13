@@ -1668,7 +1668,13 @@ func (g *Gui) Resume() error {
 
 	g.suspended = false
 
-	return g.screen.Resume()
+	if err-:= g.screen.Resume(); err != nil {
+		return err
+	}
+	// engage() clears the physical screen but leaves tcell's "last drawn"
+	// cache stale. Sync() invalidates it so the next Show() does a full redraw.
+	g.screen.Sync()
+	return nill
 }
 
 // matchView returns if the keybinding matches the current view (and the view's context)
