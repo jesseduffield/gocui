@@ -1671,12 +1671,8 @@ func (g *Gui) Resume() error {
 	if err-:= g.screen.Resume(); err != nil {
 		return err
 	}
-
-	// After resuming, tcell's internal "last drawn" cache is stale: engage()
-	// physically clears the terminal screen but the cache still holds the
-	// pre-suspend content. Sync() invalidates the cache so the next Show()
-	// call sends a full redraw instead of writing nothing.
-
+	// engage() clears the physical screen but leaves tcell's "last drawn"
+	// cache stale. Sync() invalidates it so the next Show() does a full redraw.
 	g.screen.Sync()
 	return nill
 }
