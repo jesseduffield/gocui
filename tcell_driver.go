@@ -159,8 +159,7 @@ type gocuiEventType uint8
 type GocuiEvent struct {
 	Type    gocuiEventType
 	Mod     Modifier
-	Key     KeyName
-	Ch      rune
+	Key     Key
 	Width   int
 	Height  int
 	Err     error
@@ -289,7 +288,6 @@ func (g *Gui) pollEvent() GocuiEvent {
 		k := tev.Key()
 		ch := rune(0)
 		if k == tcell.KeyRune {
-			k = 0 // if rune remove key (so it can match rune instead of key)
 			ch = tev.Rune()
 			if ch == ' ' {
 				// special handling for spacebar
@@ -326,8 +324,7 @@ func (g *Gui) pollEvent() GocuiEvent {
 
 		return GocuiEvent{
 			Type: eventKey,
-			Key:  KeyName(k),
-			Ch:   ch,
+			Key:  NewKey(KeyName(k), ch),
 			Mod:  Modifier(mod),
 		}
 	case *tcell.EventMouse:
@@ -410,8 +407,7 @@ func (g *Gui) pollEvent() GocuiEvent {
 			Type:   eventMouse,
 			MouseX: x,
 			MouseY: y,
-			Key:    mouseKey,
-			Ch:     0,
+			Key:    NewKeyName(mouseKey),
 			Mod:    mouseMod,
 		}
 	case *tcell.EventFocus:

@@ -180,10 +180,10 @@ type Gui struct {
 	Mutexes GuiMutexes
 
 	OnSearchEscape func() error
-	// these keys must either be of type Key of rune
-	SearchEscapeKey    any
-	NextSearchMatchKey any
-	PrevSearchMatchKey any
+
+	SearchEscapeKey    Key
+	NextSearchMatchKey Key
+	PrevSearchMatchKey Key
 
 	ErrorHandler func(error) error
 
@@ -259,9 +259,9 @@ func NewGui(opts NewGuiOpts) (*Gui, error) {
 	g.SupportOverlaps = opts.SupportOverlaps
 
 	// default keys for when searching strings in a view
-	g.SearchEscapeKey = KeyEsc
-	g.NextSearchMatchKey = 'n'
-	g.PrevSearchMatchKey = 'N'
+	g.SearchEscapeKey = NewKeyName(KeyEsc)
+	g.NextSearchMatchKey = NewKeyRune('n')
+	g.PrevSearchMatchKey = NewKeyRune('N')
 
 	g.playRecording = opts.PlayRecording
 
@@ -554,28 +554,16 @@ func (g *Gui) CurrentView() *View {
 // It behaves differently on different platforms. Somewhere it doesn't register Alt key press,
 // on others it might report Ctrl as Alt. It's not consistent and therefore it's not recommended
 // to use with mouse keys.
-func (g *Gui) SetKeybinding(viewname string, key any, mod Modifier, handler func(*Gui, *View) error) error {
-	var kb *keybinding
-
-	k, ch, err := getKey(key)
-	if err != nil {
-		return err
-	}
-
-	kb = newKeybinding(viewname, k, ch, mod, handler)
+func (g *Gui) SetKeybinding(viewname string, key Key, mod Modifier, handler func(*Gui, *View) error) error {
+	kb := newKeybinding(viewname, key, mod, handler)
 	g.keybindings = append(g.keybindings, kb)
 	return nil
 }
 
 // DeleteKeybinding deletes a keybinding.
-func (g *Gui) DeleteKeybinding(viewname string, key any, mod Modifier) error {
-	k, ch, err := getKey(key)
-	if err != nil {
-		return err
-	}
-
+func (g *Gui) DeleteKeybinding(viewname string, key Key, mod Modifier) error {
 	for i, kb := range g.keybindings {
-		if kb.viewName == viewname && kb.ch == ch && kb.key == k && kb.mod == mod {
+		if kb.viewName == viewname && kb.key.keyName == key.KeyName() && kb.key.ch == key.ch && kb.mod == mod {
 			g.keybindings = append(g.keybindings[:i], g.keybindings[i+1:]...)
 			return nil
 		}
@@ -631,21 +619,6 @@ func (g *Gui) SetOnSelectSearchResultFunc(onSelectSearchResultFunc func(*View, i
 
 func (g *Gui) SetRenderSearchStatusFunc(renderSearchStatusFunc func(*View, int, int)) {
 	g.renderSearchStatusFunc = renderSearchStatusFunc
-}
-
-// getKey takes an empty interface with a key and returns the corresponding
-// typed Key or rune.
-func getKey(key any) (KeyName, rune, error) {
-	switch t := key.(type) {
-	case nil: // Ignore keybinding if `nil`
-		return 0, 0, nil
-	case KeyName:
-		return t, 0, nil
-	case rune:
-		return 0, t, nil
-	default:
-		return 0, 0, errors.New("unknown type")
-	}
 }
 
 // userEvent represents an event triggered by the user.
@@ -1306,8 +1279,8 @@ func (g *Gui) onKey(ev *GocuiEvent) error {
 		// seem harmful for other terminal emulators.
 		//
 		// KeyCtrlJ (int value 10) is '\r'.
-		if g.IsPasting && ev.Key == KeyCtrlJ {
-			ev.Key = KeyEnter
+		if g.IsPasting && ev.Key.KeyName() == KeyCtrlJ {
+			ev.Key = NewKeyName(KeyEnter)
 		}
 
 		err := g.execKeybindings(g.currentView, ev)
@@ -1348,7 +1321,7 @@ func (g *Gui) onKey(ev *GocuiEvent) error {
 			}
 		}
 
-		if ev.Key == MouseLeft && (ev.Mod&ModMotion) == 0 && !v.Editable && g.openHyperlink != nil {
+		if ev.Key.KeyName() == MouseLeft && (ev.Mod&ModMotion) == 0 && !v.Editable && g.openHyperlink != nil {
 			if newY >= 0 && newY <= len(v.viewLines)-1 && newX >= 0 && newX <= len(v.viewLines[newY].line)-1 {
 				if link := v.viewLines[newY].line[newX].hyperlink; link != "" {
 					return g.openHyperlink(link, v.name)
@@ -1357,14 +1330,14 @@ func (g *Gui) onKey(ev *GocuiEvent) error {
 		}
 
 		if g.ShouldHandleMouseEvent != nil {
-			if !g.ShouldHandleMouseEvent(v, ev.Key) {
+			if !g.ShouldHandleMouseEvent(v, ev.Key.KeyName()) {
 				// Give clients a chance to reject clicks, for example clicks in inactive views
 				// when a modal panel is open.
 				break
 			}
 		}
 
-		if !IsMouseScrollKey(ev.Key) {
+		if !IsMouseScrollKey(ev.Key.KeyName()) {
 			v.SetCursor(newCx, newCy)
 			if v.Editable {
 				v.TextArea.SetCursor2D(newX, newY)
@@ -1392,8 +1365,8 @@ func (g *Gui) onKey(ev *GocuiEvent) error {
 		}
 
 		if IsMouseKey(ev.Key) {
-			isDoubleClick := g.recordClickInfo(newX, newY, ev.Key, v)
-			opts := ViewMouseBindingOpts{X: newX, Y: newY, Key: ev.Key, IsDoubleClick: isDoubleClick}
+			isDoubleClick := g.recordClickInfo(newX, newY, ev.Key.KeyName(), v)
+			opts := ViewMouseBindingOpts{X: newX, Y: newY, Key: ev.Key.KeyName(), IsDoubleClick: isDoubleClick}
 			matched, err := g.execMouseKeybindings(v, ev, opts)
 			if err != nil {
 				return err
@@ -1455,7 +1428,7 @@ func (g *Gui) recordClickInfo(x, y int, key KeyName, v *View) bool {
 func (g *Gui) execMouseKeybindings(view *View, ev *GocuiEvent, opts ViewMouseBindingOpts) (bool, error) {
 	isMatch := func(binding *ViewMouseBinding) bool {
 		return binding.ViewName == view.Name() &&
-			ev.Key == binding.Key &&
+			ev.Key.KeyName() == binding.Key &&
 			ev.Mod == binding.Modifier
 	}
 
@@ -1477,8 +1450,8 @@ func (g *Gui) execMouseKeybindings(view *View, ev *GocuiEvent, opts ViewMouseBin
 	return false, nil
 }
 
-func IsMouseKey(key any) bool {
-	switch key {
+func IsMouseKey(key Key) bool {
+	switch key.KeyName() {
 	case
 		MouseLeft,
 		MouseRight,
@@ -1494,8 +1467,8 @@ func IsMouseKey(key any) bool {
 	}
 }
 
-func IsMouseScrollKey(key any) bool {
-	switch key {
+func IsMouseScrollKey(keyName KeyName) bool {
+	switch keyName {
 	case
 		MouseWheelUp,
 		MouseWheelDown,
@@ -1519,11 +1492,11 @@ func (g *Gui) execKeybindings(v *View, ev *GocuiEvent) error {
 
 	// if we're searching, and we've hit n/N/Esc, we ignore the default keybinding
 	if v != nil && v.IsSearching() && ev.Mod == ModNone {
-		if eventMatchesKey(ev, g.NextSearchMatchKey) {
+		if ev.Key.Equals(g.NextSearchMatchKey) {
 			return v.gotoNextMatch()
-		} else if eventMatchesKey(ev, g.PrevSearchMatchKey) {
+		} else if ev.Key.Equals(g.PrevSearchMatchKey) {
 			return v.gotoPreviousMatch()
-		} else if eventMatchesKey(ev, g.SearchEscapeKey) {
+		} else if ev.Key.Equals(g.SearchEscapeKey) {
 			v.searcher.clearSearch()
 			if g.OnSearchEscape != nil {
 				if err := g.OnSearchEscape(); err != nil {
@@ -1540,7 +1513,7 @@ func (g *Gui) execKeybindings(v *View, ev *GocuiEvent) error {
 		if kb.handler == nil {
 			continue
 		}
-		if !kb.matchKeypress(ev.Key, ev.Ch, ev.Mod) {
+		if !kb.matchKeypress(ev.Key, ev.Mod) {
 			continue
 		}
 		if g.matchView(v, kb) {
@@ -1555,7 +1528,7 @@ func (g *Gui) execKeybindings(v *View, ev *GocuiEvent) error {
 		if v != nil && g.matchView(v.ParentView, kb) {
 			matchingParentViewKb = kb
 		}
-		if globalKb == nil && kb.viewName == "" && ((v != nil && !v.Editable) || (kb.ch == 0 && kb.key != KeyCtrlU && kb.key != KeyCtrlA && kb.key != KeyCtrlE)) {
+		if globalKb == nil && kb.viewName == "" && ((v != nil && !v.Editable) || (kb.key.keyName != KeyCtrlU && kb.key.keyName != KeyCtrlA && kb.key.keyName != KeyCtrlE)) {
 			globalKb = kb
 		}
 	}
@@ -1567,7 +1540,7 @@ func (g *Gui) execKeybindings(v *View, ev *GocuiEvent) error {
 	}
 
 	if g.currentView != nil && g.currentView.Editable && g.currentView.Editor != nil {
-		matched := g.currentView.Editor.Edit(g.currentView, ev.Key, ev.Ch, ev.Mod)
+		matched := g.currentView.Editor.Edit(g.currentView, ev.Key, ev.Mod)
 		if matched {
 			return nil
 		}
@@ -1658,7 +1631,7 @@ func (g *Gui) matchView(v *View, kb *keybinding) bool {
 	if v == nil {
 		return false
 	}
-	if v.Editable && kb.ch != 0 {
+	if v.Editable && kb.key.ch != 0 {
 		return false
 	}
 	if kb.viewName != v.name {

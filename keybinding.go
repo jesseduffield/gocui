@@ -18,41 +18,25 @@ type Modifier tcell.ModMask
 // Keybindings are used to link a given key-press event with a handler.
 type keybinding struct {
 	viewName string
-	key      KeyName
-	ch       rune
+	key      Key
 	mod      Modifier
 	handler  func(*Gui, *View) error
 }
 
 // newKeybinding returns a new Keybinding object.
-func newKeybinding(viewname string, key KeyName, ch rune, mod Modifier, handler func(*Gui, *View) error) (kb *keybinding) {
+func newKeybinding(viewname string, key Key, mod Modifier, handler func(*Gui, *View) error) (kb *keybinding) {
 	kb = &keybinding{
 		viewName: viewname,
 		key:      key,
-		ch:       ch,
 		mod:      mod,
 		handler:  handler,
 	}
 	return kb
 }
 
-func eventMatchesKey(ev *GocuiEvent, key any) bool {
-	// assuming ModNone for now
-	if ev.Mod != ModNone {
-		return false
-	}
-
-	k, ch, err := getKey(key)
-	if err != nil {
-		return false
-	}
-
-	return k == ev.Key && ch == ev.Ch
-}
-
 // matchKeypress returns if the keybinding matches the keypress.
-func (kb *keybinding) matchKeypress(keyName KeyName, ch rune, mod Modifier) bool {
-	return kb.key == keyName && kb.ch == ch && kb.mod == mod
+func (kb *keybinding) matchKeypress(key Key, mod Modifier) bool {
+	return kb.key.Equals(key) && kb.mod == mod
 }
 
 // Special keys.
