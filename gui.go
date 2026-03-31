@@ -8,7 +8,6 @@ import (
 	"context"
 	standardErrors "errors"
 	"runtime"
-	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -25,15 +24,6 @@ type OutputMode int
 const DOUBLE_CLICK_THRESHOLD = 500 * time.Millisecond
 
 var (
-	// ErrAlreadyBlacklisted is returned when the keybinding is already blacklisted.
-	ErrAlreadyBlacklisted = standardErrors.New("keybind already blacklisted")
-
-	// ErrBlacklisted is returned when the keybinding being parsed / used is blacklisted.
-	ErrBlacklisted = standardErrors.New("keybind blacklisted")
-
-	// ErrNotBlacklisted is returned when a keybinding being whitelisted is not blacklisted.
-	ErrNotBlacklisted = standardErrors.New("keybind not blacklisted")
-
 	// ErrNoSuchKeybind is returned when the keybinding being parsed does not exist.
 	ErrNoSuchKeybind = standardErrors.New("no such keybind")
 
@@ -155,7 +145,6 @@ type Gui struct {
 	maxX, maxY               int
 	outputMode               OutputMode
 	stop                     chan struct{}
-	blacklist                []Key
 
 	// BgColor and FgColor allow to configure the background and foreground
 	// colors of the GUI.
@@ -573,10 +562,6 @@ func (g *Gui) SetKeybinding(viewname string, key any, mod Modifier, handler func
 		return err
 	}
 
-	if g.isBlacklisted(k) {
-		return ErrBlacklisted
-	}
-
 	kb = newKeybinding(viewname, k, ch, mod, handler)
 	g.keybindings = append(g.keybindings, kb)
 	return nil
@@ -630,26 +615,6 @@ func (g *Gui) SetViewClickBinding(binding *ViewMouseBinding) error {
 	g.viewMouseBindings = append(g.viewMouseBindings, binding)
 
 	return nil
-}
-
-// BlackListKeybinding adds a keybinding to the blacklist
-func (g *Gui) BlacklistKeybinding(k Key) error {
-	if slices.Contains(g.blacklist, k) {
-		return ErrAlreadyBlacklisted
-	}
-	g.blacklist = append(g.blacklist, k)
-	return nil
-}
-
-// WhiteListKeybinding removes a keybinding from the blacklist
-func (g *Gui) WhitelistKeybinding(k Key) error {
-	for i, j := range g.blacklist {
-		if j == k {
-			g.blacklist = append(g.blacklist[:i], g.blacklist[i+1:]...)
-			return nil
-		}
-	}
-	return ErrNotBlacklisted
 }
 
 func (g *Gui) SetFocusHandler(handler func(bool) error) {
@@ -1616,10 +1581,6 @@ func (g *Gui) execKeybindings(v *View, ev *GocuiEvent) error {
 
 // execKeybinding executes a given keybinding
 func (g *Gui) execKeybinding(v *View, kb *keybinding) error {
-	if g.isBlacklisted(kb.key) {
-		return nil
-	}
-
 	if err := kb.handler(g, v); err != nil {
 		return err
 	}
@@ -1663,11 +1624,6 @@ func (g *Gui) StartTicking(ctx context.Context) {
 			}
 		}
 	}()
-}
-
-// isBlacklisted reports whether the key is blacklisted
-func (g *Gui) isBlacklisted(k Key) bool {
-	return slices.Contains(g.blacklist, k)
 }
 
 func (g *Gui) Suspend() error {
