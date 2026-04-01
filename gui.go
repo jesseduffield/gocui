@@ -82,14 +82,14 @@ type ViewMouseBinding struct {
 	Modifier Modifier
 
 	// must be a mouse key
-	Key Key
+	Key KeyName
 }
 
 type ViewMouseBindingOpts struct {
 	X int // i.e. origin x + cursor x
 	Y int // i.e. origin y + cursor y
 
-	Key Key // which button was clicked (will be one of the Mouse* constants)
+	Key KeyName // which button was clicked (will be one of the Mouse* constants)
 
 	IsDoubleClick bool // true if this is a double click
 }
@@ -116,7 +116,7 @@ type RecordingConfig struct {
 type clickInfo struct {
 	x        int
 	y        int
-	key      Key
+	key      KeyName
 	viewName string
 	time     time.Time
 }
@@ -187,7 +187,7 @@ type Gui struct {
 
 	ErrorHandler func(error) error
 
-	ShouldHandleMouseEvent func(view *View, key Key) bool
+	ShouldHandleMouseEvent func(view *View, key KeyName) bool
 
 	screen         tcell.Screen
 	suspendedMutex sync.Mutex
@@ -635,11 +635,11 @@ func (g *Gui) SetRenderSearchStatusFunc(renderSearchStatusFunc func(*View, int, 
 
 // getKey takes an empty interface with a key and returns the corresponding
 // typed Key or rune.
-func getKey(key any) (Key, rune, error) {
+func getKey(key any) (KeyName, rune, error) {
 	switch t := key.(type) {
 	case nil: // Ignore keybinding if `nil`
 		return 0, 0, nil
-	case Key:
+	case KeyName:
 		return t, 0, nil
 	case rune:
 		return 0, t, nil
@@ -1427,7 +1427,7 @@ func (g *Gui) onKey(ev *GocuiEvent) error {
 }
 
 // remember the information for this click, and return true if it was a double click
-func (g *Gui) recordClickInfo(x, y int, key Key, v *View) bool {
+func (g *Gui) recordClickInfo(x, y int, key KeyName, v *View) bool {
 	if IsMouseScrollKey(key) {
 		g.lastClick = nil
 		return false
