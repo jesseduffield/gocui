@@ -293,7 +293,7 @@ func (g *Gui) pollEvent() GocuiEvent {
 			ch = tev.Rune()
 			if ch == ' ' {
 				// special handling for spacebar
-				k = 32 // tcell keys ends at 31 or starts at 256
+				k = tcell.Key(KeySpace)
 				ch = rune(0)
 			}
 		}
