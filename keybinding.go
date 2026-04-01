@@ -229,6 +229,12 @@ const (
 	KeyShiftArrowDown     = Key(tcell.KeyF63)
 	KeyArrowLeft          = Key(tcell.KeyLeft)
 	KeyArrowRight         = Key(tcell.KeyRight)
+	KeyCtrlArrowLeft      = Key(tcell.KeyF52)
+	KeyCtrlArrowRight     = Key(tcell.KeyF53)
+	KeyCtrlArrowUp        = Key(tcell.KeyF54)
+	KeyCtrlArrowDown      = Key(tcell.KeyF55)
+	KeyCtrlBackspace      = Key(tcell.KeyF56)
+	KeyCtrlDelete         = Key(tcell.KeyF57)
 )
 
 // Keys combinations.

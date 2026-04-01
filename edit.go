@@ -30,6 +30,8 @@ func SimpleEditor(v *View, key Key, ch rune, mod Modifier) bool {
 		v.TextArea.BackSpaceWord()
 	case key == KeyBackspace || key == KeyBackspace2 || key == KeyCtrlH:
 		v.TextArea.BackSpaceChar()
+	case key == KeyDelete && (mod&ModAlt) != 0:
+		v.TextArea.DeleteWord()
 	case key == KeyCtrlD || key == KeyDelete:
 		v.TextArea.DeleteChar()
 	case key == KeyArrowDown:
@@ -40,10 +42,14 @@ func SimpleEditor(v *View, key Key, ch rune, mod Modifier) bool {
 		v.TextArea.MoveLeftWord()
 	case key == KeyArrowLeft || key == KeyCtrlB:
 		v.TextArea.MoveCursorLeft()
+	case key == KeyCtrlArrowLeft:
+		v.TextArea.MoveLeftWord()
 	case (key == KeyArrowRight || ch == 'f') && (mod&ModAlt) != 0:
 		v.TextArea.MoveRightWord()
 	case key == KeyArrowRight || key == KeyCtrlF:
 		v.TextArea.MoveCursorRight()
+	case key == KeyCtrlArrowRight:
+		v.TextArea.MoveRightWord()
 	case key == KeyEnter:
 		v.TextArea.TypeCharacter("\n")
 	case key == KeySpace:
@@ -60,6 +66,10 @@ func SimpleEditor(v *View, key Key, ch rune, mod Modifier) bool {
 		v.TextArea.GoToEndOfLine()
 	case key == KeyCtrlW:
 		v.TextArea.BackSpaceWord()
+	case key == KeyCtrlBackspace:
+		v.TextArea.BackSpaceWord()
+	case key == KeyCtrlDelete:
+		v.TextArea.DeleteWord()
 	case key == KeyCtrlY:
 		v.TextArea.Yank()
 	case ch != 0:
