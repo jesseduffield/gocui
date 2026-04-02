@@ -1528,7 +1528,7 @@ func (g *Gui) execKeybindings(v *View, ev *GocuiEvent) error {
 		if v != nil && g.matchView(v.ParentView, kb) {
 			matchingParentViewKb = kb
 		}
-		if globalKb == nil && kb.viewName == "" && ((v != nil && !v.Editable) || (kb.key.keyName != KeyCtrlU && kb.key.keyName != KeyCtrlA && kb.key.keyName != KeyCtrlE)) {
+		if globalKb == nil && kb.viewName == "" {
 			globalKb = kb
 		}
 	}
