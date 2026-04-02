@@ -6,63 +6,66 @@ package gocui
 
 // Editor interface must be satisfied by gocui editors.
 type Editor interface {
-	Edit(v *View, key Key, mod Modifier) bool
+	Edit(v *View, key Key) bool
 }
 
 // The EditorFunc type is an adapter to allow the use of ordinary functions as
 // Editors. If f is a function with the appropriate signature, EditorFunc(f)
 // is an Editor object that calls f.
-type EditorFunc func(v *View, key Key, mod Modifier) bool
+type EditorFunc func(v *View, key Key) bool
 
 // Edit calls f(v, key, mod)
-func (f EditorFunc) Edit(v *View, key Key, mod Modifier) bool {
-	return f(v, key, mod)
+func (f EditorFunc) Edit(v *View, key Key) bool {
+	return f(v, key)
 }
 
 // DefaultEditor is the default editor.
 var DefaultEditor Editor = EditorFunc(SimpleEditor)
 
 // SimpleEditor is used as the default gocui editor.
-func SimpleEditor(v *View, key Key, mod Modifier) bool {
+func SimpleEditor(v *View, key Key) bool {
 	switch {
-	case (key.KeyName() == KeyBackspace || key.KeyName() == KeyBackspace2) && (mod&ModAlt) != 0,
-		key.KeyName() == KeyCtrlW:
+	case key.Equals(NewKey(KeyBackspace, "", ModAlt)),
+		key.Equals(NewKeyStrMod("w", ModCtrl)):
 		v.TextArea.BackSpaceWord()
-	case key.KeyName() == KeyBackspace || key.KeyName() == KeyBackspace2 || key.KeyName() == KeyCtrlH:
+	case key.Equals(NewKeyName(KeyBackspace)):
 		v.TextArea.BackSpaceChar()
-	case key.KeyName() == KeyCtrlD || key.KeyName() == KeyDelete:
+	case key.Equals(NewKeyStrMod("d", ModCtrl)),
+		key.Equals(NewKeyName(KeyDelete)):
 		v.TextArea.DeleteChar()
-	case key.KeyName() == KeyArrowDown:
+	case key.Equals(NewKeyName(KeyArrowDown)):
 		v.TextArea.MoveCursorDown()
-	case key.KeyName() == KeyArrowUp:
+	case key.Equals(NewKeyName(KeyArrowUp)):
 		v.TextArea.MoveCursorUp()
-	case (key.KeyName() == KeyArrowLeft || key.Equals(NewKeyRune('b'))) && (mod&ModAlt) != 0:
+	case key.Equals(NewKeyStrMod("b", ModAlt)),
+		key.Equals(NewKey(KeyArrowLeft, "", ModAlt)):
 		v.TextArea.MoveLeftWord()
-	case key.KeyName() == KeyArrowLeft || key.KeyName() == KeyCtrlB:
+	case key.Equals(NewKeyName(KeyArrowLeft)),
+		key.Equals(NewKeyStrMod("b", ModCtrl)):
 		v.TextArea.MoveCursorLeft()
-	case (key.KeyName() == KeyArrowRight || key.Equals(NewKeyRune('f'))) && (mod&ModAlt) != 0:
+	case key.Equals(NewKeyStrMod("f", ModAlt)),
+		key.Equals(NewKey(KeyArrowRight, "", ModAlt)):
 		v.TextArea.MoveRightWord()
-	case key.KeyName() == KeyArrowRight || key.KeyName() == KeyCtrlF:
+	case key.Equals(NewKeyName(KeyArrowRight)),
+		key.Equals(NewKeyStrMod("b", ModCtrl)):
 		v.TextArea.MoveCursorRight()
-	case key.KeyName() == KeyEnter:
+	case key.Equals(NewKeyName(KeyEnter)):
 		v.TextArea.TypeCharacter("\n")
-	case key.KeyName() == KeySpace:
-		v.TextArea.TypeCharacter(" ")
-	case key.KeyName() == KeyInsert:
+	case key.Equals(NewKeyName(KeyInsert)):
 		v.TextArea.ToggleOverwrite()
-	case key.KeyName() == KeyCtrlU:
+	case key.Equals(NewKeyStrMod("u", ModCtrl)):
 		v.TextArea.DeleteToStartOfLine()
-	case key.KeyName() == KeyCtrlK:
+	case key.Equals(NewKeyStrMod("k", ModCtrl)):
 		v.TextArea.DeleteToEndOfLine()
-	case key.KeyName() == KeyCtrlA || key.KeyName() == KeyHome:
+	case key.Equals(NewKeyStrMod("a", ModCtrl)),
+		key.Equals(NewKeyName(KeyHome)):
 		v.TextArea.GoToStartOfLine()
-	case key.KeyName() == KeyCtrlE || key.KeyName() == KeyEnd:
+	case key.Equals(NewKeyStrMod("e", ModCtrl)),
+		key.Equals(NewKeyName(KeyEnd)):
 		v.TextArea.GoToEndOfLine()
-	case key.KeyName() == KeyCtrlW:
-		v.TextArea.BackSpaceWord()
-	case key.KeyName() == KeyCtrlY:
+	case key.Equals(NewKeyStrMod("y", ModCtrl)):
 		v.TextArea.Yank()
-	case key.Str() != "":
+	case key.Str() != "" && key.Mod() == 0:
 		v.TextArea.TypeCharacter(key.Str())
 	default:
 		return false

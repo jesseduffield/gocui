@@ -1269,17 +1269,16 @@ func (g *Gui) onKey(ev *GocuiEvent) error {
 	switch ev.Type {
 	case eventKey:
 
-		// When pasting text in Ghostty, it sends us '\r' instead of '\n' for
 		// newlines. I actually don't quite understand why, because from reading
-		// Ghostty's source code (e.g.
+		// When pasting text in Ghostty, it sends us '\r' (which is delivered as
+		// ctrl-j by tcell) instead of '\n' for newlines. I actually don't quite
+		// understand why, because from reading Ghostty's source code (e.g.
 		// https://github.com/ghostty-org/ghostty/commit/010338354a0) it does
 		// this conversion only for non-bracketed paste mode, but I'm seeing it
 		// in bracketed paste mode. Whatever I'm missing here, converting '\r'
 		// back to '\n' fixes pasting multi-line text from Ghostty, and doesn't
 		// seem harmful for other terminal emulators.
-		//
-		// KeyCtrlJ (int value 10) is '\r'.
-		if g.IsPasting && ev.Key.KeyName() == KeyCtrlJ {
+		if g.IsPasting && ev.Key.Equals(NewKeyStrMod("j", ModCtrl)) {
 			ev.Key = NewKeyName(KeyEnter)
 		}
 
@@ -1321,7 +1320,7 @@ func (g *Gui) onKey(ev *GocuiEvent) error {
 			}
 		}
 
-		if ev.Key.KeyName() == MouseLeft && (ev.Mod&ModMotion) == 0 && !v.Editable && g.openHyperlink != nil {
+		if ev.Key.KeyName() == MouseLeft && (ev.Key.Mod()&ModMotion) == 0 && !v.Editable && g.openHyperlink != nil {
 			if newY >= 0 && newY <= len(v.viewLines)-1 && newX >= 0 && newX <= len(v.viewLines[newY].line)-1 {
 				if link := v.viewLines[newY].line[newX].hyperlink; link != "" {
 					return g.openHyperlink(link, v.name)
@@ -1429,7 +1428,7 @@ func (g *Gui) execMouseKeybindings(view *View, ev *GocuiEvent, opts ViewMouseBin
 	isMatch := func(binding *ViewMouseBinding) bool {
 		return binding.ViewName == view.Name() &&
 			ev.Key.KeyName() == binding.Key &&
-			ev.Mod == binding.Modifier
+			ev.Key.Mod() == binding.Modifier
 	}
 
 	// first pass looks for ones that match the focused view
@@ -1491,7 +1490,7 @@ func (g *Gui) execKeybindings(v *View, ev *GocuiEvent) error {
 	}
 
 	// if we're searching, and we've hit n/N/Esc, we ignore the default keybinding
-	if v != nil && v.IsSearching() && ev.Mod == ModNone {
+	if v != nil && v.IsSearching() {
 		if ev.Key.Equals(g.NextSearchMatchKey) {
 			return v.gotoNextMatch()
 		} else if ev.Key.Equals(g.PrevSearchMatchKey) {
@@ -1513,7 +1512,7 @@ func (g *Gui) execKeybindings(v *View, ev *GocuiEvent) error {
 		if kb.handler == nil {
 			continue
 		}
-		if !kb.matchKeypress(ev.Key, ev.Mod) {
+		if !kb.matchKeypress(ev.Key) {
 			continue
 		}
 		if g.matchView(v, kb) {
@@ -1540,7 +1539,7 @@ func (g *Gui) execKeybindings(v *View, ev *GocuiEvent) error {
 	}
 
 	if g.currentView != nil && g.currentView.Editable && g.currentView.Editor != nil {
-		matched := g.currentView.Editor.Edit(g.currentView, ev.Key, ev.Mod)
+		matched := g.currentView.Editor.Edit(g.currentView, ev.Key)
 		if matched {
 			return nil
 		}
@@ -1631,7 +1630,7 @@ func (g *Gui) matchView(v *View, kb *keybinding) bool {
 	if v == nil {
 		return false
 	}
-	if v.Editable && kb.key.Str() != "" {
+	if v.Editable && kb.key.Str() != "" && kb.key.Mod() == 0 {
 		return false
 	}
 	if kb.viewName != v.name {

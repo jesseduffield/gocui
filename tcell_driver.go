@@ -160,7 +160,6 @@ type gocuiEventType uint8
 //	The 'Err' field is valid if 'Type' is 'eventError'.
 type GocuiEvent struct {
 	Type    gocuiEventType
-	Mod     Modifier
 	Key     Key
 	Width   int
 	Height  int
@@ -291,42 +290,15 @@ func (g *Gui) pollEvent() GocuiEvent {
 		ch := ""
 		if k == tcell.KeyRune {
 			ch = tev.Str()
-			if ch == " " {
-				// special handling for spacebar
-				k = tcell.Key(KeySpace)
-				ch = ""
-			}
+		} else if k >= tcell.KeyCtrlA && k <= tcell.KeyCtrlZ {
+			ch = string(rune('a' + (k - tcell.KeyCtrlA)))
+			k = tcell.KeyRune
 		}
 		mod := tev.Modifiers()
-		// remove control modifier and setup special handling of ctrl+spacebar, etc.
-		if mod == tcell.ModCtrl && k == 32 {
-			ch = " "
-			k = tcell.KeyRune
-		} else if mod == tcell.ModShift && k == tcell.KeyUp {
-			mod = 0
-			ch = ""
-			k = tcell.KeyF62
-		} else if mod == tcell.ModShift && k == tcell.KeyDown {
-			mod = 0
-			ch = ""
-			k = tcell.KeyF63
-		} else if mod == tcell.ModCtrl || mod == tcell.ModShift {
-			// remove Ctrl or Shift if specified
-			// - shift - will be translated to the final code of rune
-			// - ctrl  - is translated in the key
-			mod = 0
-		} else if mod == tcell.ModAlt && k == tcell.KeyEnter {
-			// for the sake of convenience I'm having a KeyAltEnter key. I will likely
-			// regret this laziness in the future. We're arbitrarily mapping that to tcell's
-			// KeyF64.
-			mod = 0
-			k = tcell.KeyF64
-		}
 
 		return GocuiEvent{
 			Type: eventKey,
-			Key:  NewKey(KeyName(k), ch),
-			Mod:  Modifier(mod),
+			Key:  NewKey(KeyName(k), ch, Modifier(mod)),
 		}
 	case *tcell.EventMouse:
 		x, y := tev.Position()
@@ -408,8 +380,7 @@ func (g *Gui) pollEvent() GocuiEvent {
 			Type:   eventMouse,
 			MouseX: x,
 			MouseY: y,
-			Key:    NewKeyName(mouseKey),
-			Mod:    mouseMod,
+			Key:    NewKey(mouseKey, "", mouseMod),
 		}
 	case *tcell.EventFocus:
 		return GocuiEvent{

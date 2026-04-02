@@ -35,8 +35,8 @@ func newKeybinding(viewname string, key Key, mod Modifier, handler func(*Gui, *V
 }
 
 // matchKeypress returns if the keybinding matches the keypress.
-func (kb *keybinding) matchKeypress(key Key, mod Modifier) bool {
-	return kb.key.Equals(key) && kb.mod == mod
+func (kb *keybinding) matchKeypress(key Key) bool {
+	return kb.key.Equals(key)
 }
 
 // Special keys.
@@ -69,41 +69,38 @@ const (
 
 // Keys combinations.
 const (
-	KeyCtrlTilde  = KeyName(tcell.KeyF64) // arbitrary assignment
-	KeyCtrlA      = KeyName(tcell.KeyCtrlA)
-	KeyCtrlB      = KeyName(tcell.KeyCtrlB)
-	KeyCtrlC      = KeyName(tcell.KeyCtrlC)
-	KeyCtrlD      = KeyName(tcell.KeyCtrlD)
-	KeyCtrlE      = KeyName(tcell.KeyCtrlE)
-	KeyCtrlF      = KeyName(tcell.KeyCtrlF)
-	KeyCtrlG      = KeyName(tcell.KeyCtrlG)
-	KeyBackspace  = KeyName(tcell.KeyBackspace)
-	KeyCtrlH      = KeyName(tcell.KeyCtrlH)
-	KeyTab        = KeyName(tcell.KeyTab)
-	KeyBacktab    = KeyName(tcell.KeyBacktab)
-	KeyCtrlI      = KeyName(tcell.KeyCtrlI)
-	KeyCtrlJ      = KeyName(tcell.KeyCtrlJ)
-	KeyCtrlK      = KeyName(tcell.KeyCtrlK)
-	KeyCtrlL      = KeyName(tcell.KeyCtrlL)
-	KeyEnter      = KeyName(tcell.KeyEnter)
-	KeyCtrlM      = KeyName(tcell.KeyCtrlM)
-	KeyCtrlN      = KeyName(tcell.KeyCtrlN)
-	KeyCtrlO      = KeyName(tcell.KeyCtrlO)
-	KeyCtrlP      = KeyName(tcell.KeyCtrlP)
-	KeyCtrlQ      = KeyName(tcell.KeyCtrlQ)
-	KeyCtrlR      = KeyName(tcell.KeyCtrlR)
-	KeyCtrlS      = KeyName(tcell.KeyCtrlS)
-	KeyCtrlT      = KeyName(tcell.KeyCtrlT)
-	KeyCtrlU      = KeyName(tcell.KeyCtrlU)
-	KeyCtrlV      = KeyName(tcell.KeyCtrlV)
-	KeyCtrlW      = KeyName(tcell.KeyCtrlW)
-	KeyCtrlX      = KeyName(tcell.KeyCtrlX)
-	KeyCtrlY      = KeyName(tcell.KeyCtrlY)
-	KeyCtrlZ      = KeyName(tcell.KeyCtrlZ)
-	KeyEsc        = KeyName(tcell.KeyEscape)
-	KeySpace      = KeyName(32)
-	KeyBackspace2 = KeyName(tcell.KeyBackspace2)
-	KeyCtrl8      = KeyName(tcell.KeyBackspace2) // same key as in termbox-go
+	KeyCtrlTilde = KeyName(tcell.KeyF64) // arbitrary assignment
+	KeyCtrlA     = KeyName(tcell.KeyCtrlA)
+	KeyCtrlB     = KeyName(tcell.KeyCtrlB)
+	KeyCtrlC     = KeyName(tcell.KeyCtrlC)
+	KeyCtrlD     = KeyName(tcell.KeyCtrlD)
+	KeyCtrlE     = KeyName(tcell.KeyCtrlE)
+	KeyCtrlF     = KeyName(tcell.KeyCtrlF)
+	KeyCtrlG     = KeyName(tcell.KeyCtrlG)
+	KeyBackspace = KeyName(tcell.KeyBackspace)
+	KeyCtrlH     = KeyName(tcell.KeyCtrlH)
+	KeyTab       = KeyName(tcell.KeyTab)
+	KeyBacktab   = KeyName(tcell.KeyBacktab)
+	KeyCtrlI     = KeyName(tcell.KeyCtrlI)
+	KeyCtrlJ     = KeyName(tcell.KeyCtrlJ)
+	KeyCtrlK     = KeyName(tcell.KeyCtrlK)
+	KeyCtrlL     = KeyName(tcell.KeyCtrlL)
+	KeyEnter     = KeyName(tcell.KeyEnter)
+	KeyCtrlM     = KeyName(tcell.KeyCtrlM)
+	KeyCtrlN     = KeyName(tcell.KeyCtrlN)
+	KeyCtrlO     = KeyName(tcell.KeyCtrlO)
+	KeyCtrlP     = KeyName(tcell.KeyCtrlP)
+	KeyCtrlQ     = KeyName(tcell.KeyCtrlQ)
+	KeyCtrlR     = KeyName(tcell.KeyCtrlR)
+	KeyCtrlS     = KeyName(tcell.KeyCtrlS)
+	KeyCtrlT     = KeyName(tcell.KeyCtrlT)
+	KeyCtrlU     = KeyName(tcell.KeyCtrlU)
+	KeyCtrlV     = KeyName(tcell.KeyCtrlV)
+	KeyCtrlW     = KeyName(tcell.KeyCtrlW)
+	KeyCtrlX     = KeyName(tcell.KeyCtrlX)
+	KeyCtrlY     = KeyName(tcell.KeyCtrlY)
+	KeyCtrlZ     = KeyName(tcell.KeyCtrlZ)
+	KeyEsc       = KeyName(tcell.KeyEscape)
 
 	// The following assignments were used in termbox implementation.
 	// In tcell, these are not keys per se. But in gocui we have them
@@ -123,8 +120,9 @@ const (
 // Modifiers.
 const (
 	ModNone   Modifier = Modifier(0)
+	ModShift           = Modifier(tcell.ModShift)
+	ModCtrl            = Modifier(tcell.ModCtrl)
 	ModAlt             = Modifier(tcell.ModAlt)
-	ModMotion          = Modifier(2) // just picking an arbitrary number here that doesn't clash with tcell.ModAlt
-	// ModCtrl doesn't work with keyboard keys. Use CtrlKey in Key and ModNone. This is was for mouse clicks only (tcell.v1)
-	// ModCtrl = Modifier(tcell.ModCtrl)
+	ModMeta            = Modifier(tcell.ModMeta)
+	ModMotion          = Modifier(16) // just picking an arbitrary number here that doesn't clash with tcell's modifiers
 )
