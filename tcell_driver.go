@@ -364,8 +364,10 @@ func (g *Gui) pollEvent() GocuiEvent {
 				lastY = y
 			case tcell.ButtonSecondary:
 				mouseKey = MouseRight
+				dragState = MAYBE_DRAGGING
 			case tcell.ButtonMiddle:
 				mouseKey = MouseMiddle
+				dragState = MAYBE_DRAGGING
 			default:
 			}
 		}
@@ -377,7 +379,9 @@ func (g *Gui) pollEvent() GocuiEvent {
 				case tcell.ButtonPrimary:
 					dragState = NOT_DRAGGING
 				case tcell.ButtonSecondary:
+					dragState = NOT_DRAGGING
 				case tcell.ButtonMiddle:
+					dragState = NOT_DRAGGING
 				default:
 				}
 				mouseMod = Modifier(lastMouseMod)
