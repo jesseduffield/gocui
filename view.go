@@ -1730,15 +1730,16 @@ func (v *View) RenderTextArea() {
 	cursorX, cursorY := v.TextArea.GetCursorXY()
 	prevOriginX, prevOriginY := v.Origin()
 	width, height := v.InnerWidth(), v.InnerHeight()
+	contentX, contentY := v.TextArea.GetContentDimensions()
 
-	newViewCursorX, newOriginX := updatedCursorAndOrigin(prevOriginX, width, cursorX)
-	newViewCursorY, newOriginY := updatedCursorAndOrigin(prevOriginY, height, cursorY)
+	newViewCursorX, newOriginX := updatedCursorAndOrigin(prevOriginX, width, cursorX, contentX)
+	newViewCursorY, newOriginY := updatedCursorAndOrigin(prevOriginY, height, cursorY, contentY)
 
 	v.SetCursor(newViewCursorX, newViewCursorY)
 	v.SetOrigin(newOriginX, newOriginY)
 }
 
-func updatedCursorAndOrigin(prevOrigin int, size int, cursor int) (int, int) {
+func updatedCursorAndOrigin(prevOrigin int, size int, cursor int, contentLen int) (int, int) {
 	var newViewCursor int
 	newOrigin := prevOrigin
 	usableSize := size - 1
@@ -1751,6 +1752,15 @@ func updatedCursorAndOrigin(prevOrigin int, size int, cursor int) (int, int) {
 		newViewCursor = 0
 	} else {
 		newViewCursor = cursor - prevOrigin
+	}
+
+	// Prevent scrolling past the end of content
+	maxOrigin := contentLen - usableSize
+	if maxOrigin < 0 {
+		maxOrigin = 0
+	}
+	if newOrigin > maxOrigin {
+		newOrigin = maxOrigin
 	}
 
 	return newViewCursor, newOrigin

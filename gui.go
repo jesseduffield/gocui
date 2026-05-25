@@ -327,8 +327,9 @@ func (g *Gui) SetView(name string, x0, y0, x1, y1 int, overlaps byte) (*View, er
 
 			if v.Editable {
 				cursorX, cursorY := v.TextArea.GetCursorXY()
-				newViewCursorX, newOriginX := updatedCursorAndOrigin(0, v.InnerWidth(), cursorX)
-				newViewCursorY, newOriginY := updatedCursorAndOrigin(0, v.InnerHeight(), cursorY)
+				contentX, contentY := v.TextArea.GetContentDimensions()
+				newViewCursorX, newOriginX := updatedCursorAndOrigin(0, v.InnerWidth(), cursorX, contentX)
+				newViewCursorY, newOriginY := updatedCursorAndOrigin(0, v.InnerHeight(), cursorY, contentY)
 
 				v.SetCursor(newViewCursorX, newViewCursorY)
 				v.SetOrigin(newOriginX, newOriginY)

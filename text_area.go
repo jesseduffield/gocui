@@ -36,6 +36,8 @@ type TextArea struct {
 	clipboard     string
 	AutoWrap      bool
 	AutoWrapWidth int
+	maxContentX   int // cached max x coordinate of content (rightmost position)
+	maxContentY   int // cached max y coordinate of content (line count - 1)
 }
 
 func stringToTextAreaCells(str string) []TextAreaCell {
@@ -248,6 +250,29 @@ func (self *TextArea) updateCells() {
 	}
 
 	self.cells, _ = contentToCells(self.content, width)
+	self.computeMaxDimensions()
+}
+
+func (self *TextArea) computeMaxDimensions() {
+	self.maxContentX = 0
+	self.maxContentY = 0
+	for _, cell := range self.cells {
+		if cell.y > self.maxContentY {
+			self.maxContentY = cell.y
+		}
+		rightEdge := cell.x + cell.width
+		if rightEdge > self.maxContentX {
+			self.maxContentX = rightEdge
+		}
+	}
+	// If content ends with a newline, there's a blank line after it
+	if len(self.cells) > 0 && self.cells[len(self.cells)-1].char == "\n" {
+		self.maxContentY++
+	}
+}
+
+func (self *TextArea) GetContentDimensions() (int, int) {
+	return self.maxContentX, self.maxContentY
 }
 
 func (self *TextArea) typeCharacter(ch string) {
