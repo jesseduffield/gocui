@@ -101,22 +101,40 @@ func TestUpdatedCursorAndOrigin(t *testing.T) {
 		prevOrigin     int
 		size           int
 		cursor         int
+		contentLen     int
 		expectedCursor int
 		expectedOrigin int
 	}{
-		{0, 10, 0, 0, 0},
-		{0, 10, 9, 9, 0},
-		{0, 10, 10, 9, 1},
-		{0, 10, 19, 9, 10},
-		{0, 10, 20, 9, 11},
-		{20, 10, 19, 0, 19},
-		{20, 10, 25, 5, 20},
+		// Original test cases with very long content (100 chars)
+		{0, 10, 0, 100, 0, 0},
+		{0, 10, 9, 100, 9, 0},
+		{0, 10, 10, 100, 9, 1},
+		{0, 10, 19, 100, 9, 10},
+		{0, 10, 20, 100, 9, 11},
+		{20, 10, 19, 100, 0, 19},
+		{20, 10, 25, 100, 5, 20},
+		// content shorter than view should clamp origin to 0
+		{5, 10, 5, 8, 0, 0},
+		// content equal to usable size should allow origin at most 0
+		{0, 10, 8, 9, 8, 0},
+		// content just longer than usable size (10 content, size 10, usableSize 9)
+		{0, 10, 9, 10, 9, 0},  // cursor at last char, should be visible at origin 0
+		{0, 10, 10, 10, 9, 1}, // cursor past end gets clamped, but so does origin to max 1
+		{1, 10, 8, 10, 7, 1},  // already scrolled, cursor moves left
+		{1, 10, 9, 10, 8, 1},  // cursor at last position of content, origin stays at 1
+		// content exactly fits after some scrolling
+		{5, 10, 5, 14, 0, 5}, // contentLen=14, usableSize=9, maxOrigin=5, cursor at origin
+		{5, 10, 9, 14, 4, 5}, // contentLen=14, cursor at 9, can show 5-13, origin stays at 5
+		// cursor at end of just-longer content should show last chars
+		{0, 10, 20, 20, 9, 11}, // contentLen=20, cursor at 20, maxOrigin=11, shows 11-19
+		// scrolled past middle, content shrinks, should clamp origin
+		{7, 10, 5, 15, 0, 5}, // was scrolled to 7, but contentLen=15 allows maxOrigin=6, cursor at 5 means origin=5
 	}
 
 	for _, test := range tests {
-		cursor, origin := updatedCursorAndOrigin(test.prevOrigin, test.size, test.cursor)
+		cursor, origin := updatedCursorAndOrigin(test.prevOrigin, test.size, test.cursor, test.contentLen)
 		assert.EqualValues(t, test.expectedCursor, cursor, "Cursor is wrong")
-		assert.EqualValues(t, test.expectedOrigin, origin, "Origin in wrong")
+		assert.EqualValues(t, test.expectedOrigin, origin, "Origin is wrong")
 	}
 }
 
