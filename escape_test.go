@@ -150,6 +150,30 @@ func TestParseOneColours(t *testing.T) {
 	}
 }
 
+// Real-world colorized output (progress bars, spinners, dev-server reloaders)
+// commonly interleaves SGR color with other CSI sequences. Any CSI sequence
+// gocui doesn't specifically implement should still be consumed silently,
+// not treated as a parse error - a parse error causes the raw escape bytes to
+// be printed as literal text (see View.parseInput), which is the "I see
+// escape codes instead of color" symptom.
+func TestParseOneUnhandledCSISequencesAreConsumed(t *testing.T) {
+	sequences := []string{
+		"\x1b[?25l", // hide cursor (DEC private mode)
+		"\x1b[?25h", // show cursor (DEC private mode)
+		"\x1b[1;1H", // cursor position
+		"\x1b[H",    // cursor home, no params
+		"\x1b[1A",   // cursor up
+		"\x1b[2J",   // clear screen
+		"\x1b[s",    // save cursor position, no params
+		"\x1b[u",    // restore cursor position, no params
+	}
+
+	for _, seq := range sequences {
+		ei := newEscapeInterpreter(OutputNormal)
+		parseEscRunes(t, ei, seq)
+	}
+}
+
 func parseEscRunes(t *testing.T, ei *escapeInterpreter, runes string) {
 	for _, b := range []byte(runes) {
 		isEscape, err := ei.parseOne([]byte{b})
