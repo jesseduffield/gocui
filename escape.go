@@ -162,10 +162,24 @@ func (ei *escapeInterpreter) parseOne(ch []byte) (isEscape bool, err error) {
 		switch {
 		case len(ch) == 1 && ch[0] >= '0' && ch[0] <= '9':
 			ei.csiParam = append(ei.csiParam, "")
+		case len(ch) == 1 && ch[0] >= 0x3c && ch[0] <= 0x3f:
+			// private-use parameter prefix, e.g. '?' in "\x1b[?25l" (DEC
+			// private mode). Not specially interpreted, but must be consumed
+			// as part of the sequence.
+			ei.csiParam = append(ei.csiParam, "")
 		case characterEquals(ch, 'm'):
 			ei.csiParam = append(ei.csiParam, "0")
 		case characterEquals(ch, 'K'):
 			// fall through
+		case len(ch) == 1 && ch[0] >= 0x40 && ch[0] <= 0x7e:
+			// Any other CSI final byte with no parameters (e.g. "\x1b[s" save
+			// cursor, "\x1b[H" cursor home): a complete, valid CSI sequence
+			// that we don't implement. Consume it silently instead of
+			// falling through to the error path, which would print the raw
+			// escape bytes as literal text.
+			ei.state = stateNone
+			ei.csiParam = nil
+			return true, nil
 		default:
 			return false, errCSIParseError
 		}
@@ -178,6 +192,9 @@ func (ei *escapeInterpreter) parseOne(ch []byte) (isEscape bool, err error) {
 			return true, nil
 		case characterEquals(ch, ';'):
 			ei.csiParam = append(ei.csiParam, "")
+			return true, nil
+		case len(ch) == 1 && ch[0] >= 0x3c && ch[0] <= 0x3f:
+			// see the matching case in stateCSI above
 			return true, nil
 		case characterEquals(ch, 'm'):
 			if err := ei.outputCSI(); err != nil {
@@ -203,6 +220,14 @@ func (ei *escapeInterpreter) parseOne(ch []byte) (isEscape bool, err error) {
 				ei.instruction = noInstruction{}
 			}
 
+			ei.state = stateNone
+			ei.csiParam = nil
+			return true, nil
+		case len(ch) == 1 && ch[0] >= 0x40 && ch[0] <= 0x7e:
+			// Any other CSI final byte (cursor movement, cursor position,
+			// clear screen, etc.): a complete, valid CSI sequence that we
+			// don't implement. Consume it silently rather than erroring, see
+			// the comment on the equivalent case in stateCSI above.
 			ei.state = stateNone
 			ei.csiParam = nil
 			return true, nil
