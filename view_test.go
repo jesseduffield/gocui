@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/uniseg"
 	"github.com/stretchr/testify/assert"
 )
@@ -410,6 +411,81 @@ func TestLineWrap(t *testing.T) {
 			}
 
 			assert.EqualValues(t, tc.expected, resultStrings)
+		})
+	}
+}
+
+func TestSetCharacterSelection(t *testing.T) {
+	brightGreen := tcell.Color(int(ColorGreen) + 8)
+
+	tests := []struct {
+		name       string
+		selFg      Attribute
+		selBg      Attribute
+		cellFg     Attribute
+		expectedFg tcell.Color
+		expectedBg tcell.Color
+		expectBold bool
+	}{
+		{
+			"explicit SelFgColor colours plain cells, keeping bold",
+			ColorBlack, ColorBlue, ColorDefault,
+			tcell.Color(int(ColorBlack)), tcell.Color(int(ColorBlue)), true,
+		},
+		{
+			"explicit SelFgColor overrides the cell's own colour",
+			ColorBlack, ColorBlue, ColorGreen,
+			tcell.Color(int(ColorBlack)), tcell.Color(int(ColorBlue)), false,
+		},
+		{
+			"unset SelFgColor keeps the legacy brightening",
+			ColorDefault, ColorBlue, ColorGreen,
+			brightGreen, tcell.Color(int(ColorBlue)), true,
+		},
+		{
+			"reverse in SelBgColor keeps the legacy path",
+			ColorBlack, AttrReverse, ColorGreen,
+			brightGreen, tcell.ColorDefault, true,
+		},
+		{
+			"reverse in SelFgColor keeps the legacy path",
+			ColorBlack | AttrReverse, ColorBlue, ColorGreen,
+			brightGreen, tcell.Color(int(ColorBlue)), true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g, err := NewGui(NewGuiOpts{OutputMode: OutputTrue, Headless: true, Width: 12, Height: 4})
+			if err != nil {
+				t.Fatalf("NewGui: %v", err)
+			}
+			defer g.Close()
+
+			// SetView returns the (created) view alongside ErrUnknownView
+			v, _ := g.SetView("test", 0, 0, 11, 3, 0)
+			v.Highlight = true
+			v.SelFgColor = tt.selFg
+			v.SelBgColor = tt.selBg
+			v.SetCursor(0, 0) // row 0 is selected
+
+			v.setCharacter(0, 0, "a", tt.cellFg, ColorDefault)
+
+			sim := g.screen.(tcell.SimulationScreen)
+			sim.Show()
+			cells, _, _ := sim.GetContents()
+			cell := cells[1*12+1] // +1: the frame offset applied by setCharacter
+
+			fg, bg, attrs := cell.Style.Decompose()
+			if fg != tt.expectedFg {
+				t.Errorf("foreground = %v, want %v", fg, tt.expectedFg)
+			}
+			if bg != tt.expectedBg {
+				t.Errorf("background = %v, want %v", bg, tt.expectedBg)
+			}
+			if bold := attrs&tcell.AttrBold != 0; bold != tt.expectBold {
+				t.Errorf("bold = %v, want %v", bold, tt.expectBold)
+			}
 		})
 	}
 }
